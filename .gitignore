@@ -1,0 +1,21 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# Base SQLite locale et sortie de build Nitro
+data/
+.output/
+
+# Etat local de wrangler/miniflare
+.wrangler/
+scripts/seed.generated.sql
