@@ -189,6 +189,14 @@ function NavLink({
       to={to}
       className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       activeProps={{ className: 'bg-muted text-foreground' }}
+      /**
+       * `exact` : par defaut, un lien est considere actif des que l'URL COMMENCE
+       * par sa cible. Sur /bar/historique, "Prise de commande" (/bar) s'allumait
+       * donc en meme temps que "Historique", et deux onglets paraissaient
+       * selectionnes. Chaque entree de cette barre designe une page precise,
+       * jamais une section : la correspondance doit etre exacte.
+       */
+      activeOptions={{ exact: true }}
     >
       {icon}
       <span className="hidden sm:inline">{children}</span>
