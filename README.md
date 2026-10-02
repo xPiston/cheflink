@@ -1,0 +1,219 @@
+<div align="center">
+
+# 🍽️ ChefLink
+
+**From the counter to the kitchen, without shouting.**
+
+The bar sends, the tablet chimes, one tap and it's served.
+On Cloudflare, within the free plan.
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TanStack Start](https://img.shields.io/badge/TanStack-Start-FF4154?logo=reactquery&logoColor=white)](https://tanstack.com/start)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
+[![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
+[![Tests](https://img.shields.io/badge/tests-10%20passing-22C55E)](#-tests)
+[![License](https://img.shields.io/badge/license-MIT-blue)](#license)
+
+</div>
+
+<img src="docs/screenshots/cuisine.jpg" alt="Kitchen screen: two orders as cards, the table's note highlighted, the waiting badge and the sound toggle" width="100%">
+
+---
+
+In a bar that serves food, orders travel from the counter to the kitchen by
+shouting over the coffee machine. ChefLink replaces the shouting: the server
+builds the order, the kitchen gets it **in real time** with a chime, and clears
+the card with one tap when it's ready.
+
+Two modes on the same account — and the mode belongs to the **device**, not the
+person. The counter station stays in bar mode, the kitchen tablet in kitchen
+mode, and either can switch with one click.
+
+> The interface is in French, as is the team using it. Everything below — and
+> every comment in the code — explains the decisions, not just the mechanics.
+
+## ✨ What's inside
+
+- 🔔 **Real time, with a chime** — the order lands in the kitchen without a
+  reload, and the tablet rings
+- 👆 **One tap means ready** — the whole card is the button, and the update is
+  optimistic
+- 🍔 **Menu editable mid-service** — create, edit, delete a dish, or mark it
+  unavailable without removing it
+- 📋 **Order history with statuses** — sent at, ready at, filterable
+- 📝 **Free-form note per order** — "no onions, allergy", highlighted in the
+  kitchen
+- ⏱️ **Waiting badge** — the card changes colour at 8 then 15 minutes
+- 🔐 **Session authentication** — PBKDF2 through WebCrypto, `httpOnly` cookie
+- 📱 **Built for a tablet** — large targets, dark theme, single column in
+  portrait
+- ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
+- ✅ **10 tests on the business rules**, with no database and no browser
+
+| | |
+| :--: | :--: |
+| <img src="docs/screenshots/bar.jpg" alt="Order taking: menu grouped by category on the left, sticky basket on the right with the table and the note"> | <img src="docs/screenshots/historique.jpg" alt="Order history with statuses, sent time and ready time"> |
+| **Order taking** — menu, basket, note | **History** — statuses and timestamps |
+| <img src="docs/screenshots/plats.jpg" alt="Dish management: name, category, availability"> | <img src="docs/screenshots/plat-edition.jpg" alt="Dish editing dialog"> |
+| **Dishes** — the menu, editable mid-service | **Editing** — name, category, availability |
+
+<div align="center">
+<img src="docs/screenshots/cuisine-tablette.jpg" alt="Kitchen screen on a portrait tablet: one column, full-width cards" width="45%">
+
+**The kitchen on a portrait tablet** — the shape the station actually has.
+
+</div>
+
+## 🚀 Getting started
+
+```bash
+npm install
+npm run build        # builds the Worker
+npm run db:migrate   # migrations against the local D1
+npm run db:seed      # one account and a menu of six dishes
+npm run preview      # wrangler dev: the real Cloudflare runtime, locally
+```
+
+→ http://localhost:3000 · `bar@exemple.fr` / `motdepasse`
+
+Change those credentials with `SEED_EMAIL` and `SEED_PASSWORD` before running
+`db:seed`.
+
+### `dev` or `preview`?
+
+| | `npm run dev` | `npm run preview` |
+| :-- | :--: | :--: |
+| Hot reload | ✅ | ❌ |
+| D1 | ✅ | ✅ |
+| **Real time** | ❌ | ✅ |
+
+Nitro does not publish `exports.cloudflare.ts` in its dev server, so the Durable
+Object does not exist under `vite dev`. The app keeps working — screens catch up
+on the safety-net refetch — and the server **says so** in the console rather than
+going quietly silent. To work on anything real-time, use `preview`.
+
+## ☁️ Deploying
+
+```bash
+wrangler d1 create cheflink     # copy the id into wrangler.jsonc
+npm run db:migrate:remote
+npm run db:seed:remote
+npm run deploy
+```
+
+`wrangler.jsonc` declares the two bindings: `DB` (D1) and `REALTIME` (the
+`Realtime` Durable Object, registered under `new_sqlite_classes` — the only
+storage backend available on the free plan). Nitro merges that file with its
+build output into `.output/server/wrangler.json`, which is what wrangler ships.
+
+## 🧱 How it's built
+
+```
+src/
+  lib/orders.ts        pure rules: statuses, line merging, urgency
+  db/                  Drizzle schema and access to the request's D1
+  server/
+    cloudflare.ts      the current request's bindings (D1, Durable Object)
+    password.ts        PBKDF2 via WebCrypto, shared with the seed script
+    auth.ts            sessions and the requireUser guard
+    realtime.ts        the Durable Object: WebSocket and broadcast
+    events.ts          publish to the hub, attach a screen to it
+    functions/         server functions: auth, dishes, orders
+  hooks/               WebSocket subscription and reconnect, Web Audio chime
+  routes/
+    connexion.tsx      public
+    _app.tsx           shell and access guard: everything below it is protected
+    _app.bar.*         bar mode
+    _app.cuisine.tsx   kitchen mode
+    api.ws.ts          the real-time entry point
+drizzle/               SQL migrations applied by wrangler
+scripts/seed.ts        generates the demo data as SQL
+exports.cloudflare.ts  exposes the Realtime class to the Worker
+wrangler.jsonc         D1 and Durable Object bindings
+```
+
+### Real time
+
+The server publishes three events — `order.created`, `order.completed`,
+`dishes.changed` — over a **WebSocket** (`/api/ws`).
+
+**Why a Durable Object.** A Worker is stateless and replicated: the bar station
+and the kitchen tablet can land on two different isolates, or two different
+continents. An in-memory bus cannot connect them. A Durable Object is the
+opposite — exactly *one* instance for a given id, anywhere in the world. It is
+the one place in this infrastructure where "everyone is looking at the same
+object" means something, so that is where the connections live.
+
+It uses **hibernation** (`acceptWebSocket`): the object can be evicted from
+memory between orders while the connections stay open. A tablet plugged in for a
+whole shift therefore doesn't bill continuous execution time.
+
+The trade-off we accepted: `EventSource` reconnected on its own, `WebSocket`
+doesn't. `useAppEvents` does that work, with exponential backoff so it doesn't
+hammer a server that is already down — and it treats **every open as a
+synchronisation point**. Without that, an order sent while the tablet is
+hydrating, or during a wifi drop, would be lost for good, and the screen would
+show "nothing to prepare" with an order sitting in the database. That happened
+during testing; it's fixed.
+
+### The sound
+
+Synthesised with the Web Audio API: two notes, no file, no licensing question.
+
+**Browsers refuse to play sound before a user interaction.** A tablet opened in
+the morning and never touched again would stay silent all day — silently,
+with nothing to indicate it. Hence the "Activer le son" button at the top of the
+kitchen screen: while it is there, the sound does not work. A button to tap at
+the start of service beats a chime you discover at 8pm has never worked.
+
+### Decisions visible in the code
+
+- **No notion of price.** The app carries orders to the kitchen, it doesn't take
+  payment: the bill is settled at the till.
+- **Order lines copy the dish name** at send time. Renaming or deleting a dish
+  therefore never rewrites history.
+- **The name shown in the kitchen is read from the database server-side**, never
+  taken from the browser. The client only sends ids and quantities.
+- **Completing an order is idempotent.** The `WHERE` clause is on
+  `status = 'en_attente'`: if two people tap the same card a second apart, the
+  second one changes nothing and sees no error. In service, that is not an
+  incident.
+- **The kitchen update is optimistic**: the card disappears under the finger,
+  without waiting for the server, and comes back if the write fails.
+- **Grouped writes go through `db.batch()`**, not a transaction: D1 exposes no
+  `BEGIN`/`COMMIT`, but guarantees a batch applies entirely or not at all.
+- **PBKDF2-SHA256, 210,000 iterations**, rather than scrypt: the Workers runtime
+  offers neither `node:crypto.scrypt` nor a WebCrypto equivalent. The iteration
+  count is stored with the hash, so raising it later won't break existing
+  accounts.
+- **A hub failure never cancels the write.** An order that is saved but not
+  broadcast is recoverable; an order that is lost is not.
+
+## ✅ Tests
+
+```bash
+npm test          # business rules (Vitest)
+npm run typecheck
+```
+
+The order rules live in `src/lib/orders.ts` with no database and no React
+imports: the state machine, line merging, urgency thresholds. Which is why these
+tests run in milliseconds.
+
+## ⚠️ Not included
+
+- **No roles.** Any signed-in account can switch to kitchen mode, complete an
+  order and edit the menu. That was the choice; separate roles would take one
+  column and one guard per screen, nothing more.
+- **No order cancellation.** An order goes from pending to done, and nothing
+  else. The state machine is ready for a third state without breaking.
+- **A single venue.** The Durable Object id is the `HUB` constant in
+  `src/server/events.ts`; serving several bars would mean turning it into the
+  venue's id — and nothing else would move.
+- **No real time under `npm run dev`** (see above).
+- **No ticket printing**, and no link to a point-of-sale system.
+
+## License
+
+MIT.

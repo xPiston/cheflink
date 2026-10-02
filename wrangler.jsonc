@@ -1,0 +1,51 @@
+{
+  // Configuration Cloudflare Workers.
+  //
+  // Nitro lit ce fichier pour deux choses : les bindings exposes au code, et
+  // leur emulation en local (Miniflare) quand on lance `npm run dev`. Le
+  // developpement se fait donc contre une vraie D1 et un vrai Durable Object
+  // locaux, pas contre un substitut qui se comporterait autrement en
+  // production.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cheflink",
+  "compatibility_date": "2026-09-01",
+  // `nodejs_compat` donne `node:crypto` et consorts. L'application ne s'en sert
+  // pas pour la cryptographie (voir src/server/auth.ts, qui passe par WebCrypto)
+  // mais des dependances du framework en dependent.
+  "compatibility_flags": ["nodejs_compat"],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cheflink",
+      // A remplacer par l'identifiant rendu par `wrangler d1 create cheflink`.
+      // En local, Miniflare ignore cette valeur et cree sa propre base.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [
+      {
+        // Le hub temps reel : il tient les WebSocket ouverts des ecrans et
+        // diffuse les evenements. Voir src/server/realtime.ts.
+        "name": "REALTIME",
+        "class_name": "Realtime"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      // `new_sqlite_classes` et non `new_classes` : le backend SQLite est le
+      // seul disponible sur le plan gratuit, et c'est aussi le plus recent.
+      "new_sqlite_classes": ["Realtime"]
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}
