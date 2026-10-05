@@ -1,0 +1,106 @@
+# Automatic deployment to Cloudflare Workers.
+#
+# A push to `main` verifies, then deploys. A pull request only verifies:
+# nothing reaches production without clearing the same bar.
+#
+# BEFORE THE FIRST PUSH, two repository secrets are needed
+# (Settings > Secrets and variables > Actions):
+#
+#     CLOUDFLARE_API_TOKEN    a token with "Edit Workers" and "D1 Edit"
+#     CLOUDFLARE_ACCOUNT_ID   the Cloudflare account id
+#
+# Without them the `verify` job still passes and the `deploy` job fails on the
+# migration step - which is the right way round: nothing half-deployed.
+#
+# The database itself is already in place: created, both migrations applied,
+# and seeded. `database_id` in wrangler.jsonc points at it.
+#
+# The seed is deliberately NOT run here. `db:seed:remote` creates the starting
+# account; replaying it on every deploy would be meaningless in production. It
+# is a one-off, by hand.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Two deployments at once would trip over each other - and worse, two
+# migrations at once against the same D1 database. We serialise, without
+# cancelling a deployment already in flight: interrupting one between the
+# migration and the upload would leave the schema ahead of the code.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      # `npm ci` rather than `npm install`: the install follows the lockfile
+      # instead of resolving versions again, so CI builds exactly what was
+      # tested locally.
+      - run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      # The build is part of the checks: a Worker compilation error should
+      # stop the chain here, not during the deployment.
+      - name: Build
+        run: npm run build
+
+  deploy:
+    name: Deploy
+    needs: verify
+    # Only on main: a pull request stops after `verify`.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Migrations BEFORE going live: new code may need a column the old code
+      # ignored, whereas old code survives an extra column just fine. The other
+      # order would open a window where the Worker queries a schema that does
+      # not exist yet.
+      #
+      # The corollary worth keeping in mind: a DESTRUCTIVE migration (a dropped
+      # or renamed column) would break the version still serving traffic for a
+      # few seconds. That kind of change takes two deploys, not one.
+      - name: D1 migrations
+        run: npx wrangler d1 migrations apply cheflink --remote
+
+      # We rebuild here rather than carrying the artifact over from `verify`.
+      # Deploying needs TWO things the build produces: the `.output/` directory
+      # and the `.wrangler/deploy/config.json` that points at it, both ignored
+      # by git. Uploading then downloading them between jobs costs about what
+      # rebuilding costs, with one more way to get it wrong.
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy

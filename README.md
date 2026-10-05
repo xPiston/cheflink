@@ -13,6 +13,7 @@ On Cloudflare, within the free plan.
 [![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
 [![Tests](https://img.shields.io/badge/tests-10%20passing-22C55E)](#-tests)
+[![Deploy](https://img.shields.io/badge/deploy-on%20push%20to%20main-22C55E?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
 </div>
@@ -104,12 +105,40 @@ going quietly silent. To work on anything real-time, use `preview`.
 
 ## ☁️ Deploying
 
+**Every push to `main` deploys itself** — see
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). The workflow
+type-checks, tests and builds, then applies the D1 migrations and ships the
+Worker. A pull request runs the same checks and stops there, so nothing reaches
+production without clearing the same bar.
+
+Migrations run **before** the Worker goes live: new code may need a column the
+old code ignored, whereas old code survives an extra column just fine. The
+corollary is worth remembering — a *destructive* migration (a dropped or renamed
+column) would break the version still serving traffic for a few seconds, so that
+kind of change takes two deploys, not one.
+
+Two repository secrets are needed before the first push — Settings > Secrets
+and variables > Actions:
+
+| Repository secret | What it is |
+| :-- | :-- |
+| `CLOUDFLARE_API_TOKEN` | a token with "Edit Workers" and "D1 Edit" |
+| `CLOUDFLARE_ACCOUNT_ID` | your Cloudflare account id |
+
+Without them the `verify` job still passes and `deploy` fails on the migration
+step, which is the right way round: nothing ends up half-deployed.
+
+Starting from a fresh account instead? Create the database, point
+`database_id` in `wrangler.jsonc` at it, and lay down the starting data once —
+the workflow deliberately never seeds production:
+
 ```bash
-wrangler d1 create cheflink     # copy the id into wrangler.jsonc
+wrangler d1 create cheflink
 npm run db:migrate:remote
 npm run db:seed:remote
-npm run deploy
 ```
+
+To deploy from your machine instead: `npm run deploy`.
 
 `wrangler.jsonc` declares the two bindings: `DB` (D1) and `REALTIME` (the
 `Realtime` Durable Object, registered under `new_sqlite_classes` — the only
