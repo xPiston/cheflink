@@ -39,7 +39,8 @@ const statements = [
   `insert or ignore into users (id, email, name, password_hash, created_at) values (${[
     quote(crypto.randomUUID()),
     quote(EMAIL),
-    quote('Equipe du bar'),
+    // Nothing reads this any more; the column is still NOT NULL.
+    quote('Bar team'),
     quote(await hashPassword(PASSWORD)),
     Date.now(),
   ].join(', ')});`,

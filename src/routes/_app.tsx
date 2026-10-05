@@ -40,7 +40,6 @@ export const Route = createFileRoute('/_app')({
 })
 
 function AppLayout() {
-  const { user } = Route.useRouteContext()
   const [mode, setMode] = useMode()
   const [theme, setTheme] = useTheme()
   const navigate = useNavigate()
@@ -131,8 +130,6 @@ function AppLayout() {
           </nav>
 
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">{user.name}</span>
-
             {/*
               The icon shows what you switch TO, not the current state: in dark
               we offer the sun. The current state is read off the screen itself.

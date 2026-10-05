@@ -11,10 +11,18 @@ export { hashPassword, verifyPassword } from './password'
 export const SESSION_COOKIE = 'bar_session'
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
+/**
+ * What a signed-in screen knows about the account.
+ *
+ * Deliberately not the user's name: a venue runs on one shared account, so a
+ * display name said nothing the header did not already show, and being stored
+ * data it was the one string the interface could not translate. The column
+ * stays in D1 - dropping it would need a migration for no gain - but it stops
+ * here.
+ */
 export type SessionUser = {
   id: string
   email: string
-  name: string
 }
 
 export async function createSession(userId: string): Promise<string> {
@@ -100,7 +108,7 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 export function toSessionUser(user: UserRow): SessionUser {
-  return { id: user.id, email: user.email, name: user.name }
+  return { id: user.id, email: user.email }
 }
 
 export function newId(): string {
