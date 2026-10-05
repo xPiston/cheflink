@@ -28,7 +28,23 @@ export const Route = createRootRouteWithContext<{
       { name: 'theme-color', content: '#0a0a0a' },
       { title: 'ChefLink' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      /**
+       * The tab's icon, in the order a browser walks them.
+       *
+       * The SVG comes first with `sizes="any"`: it scales to whatever the tab,
+       * the bookmarks bar and the taskbar ask for, and every current browser
+       * reads it. The `.ico` follows with its real sizes for the ones that do
+       * not - and for the bare `/favicon.ico` some agents request on their own,
+       * which is a 404 and a blank tab otherwise. Apple is last because it
+       * wants its own name, its own size and no transparency: it ignores both
+       * of the above and falls back on the first 404 it finds.
+       */
+      { rel: 'icon', type: 'image/svg+xml', sizes: 'any', href: '/favicon.svg' },
+      { rel: 'icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+    ],
   }),
   beforeLoad: async () => ({ user: await me() }),
   shellComponent: RootDocument,

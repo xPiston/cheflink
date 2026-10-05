@@ -227,6 +227,7 @@ src/
     _app.cuisine.tsx   kitchen mode
     api.ws.ts          the real-time entry point
 messages/               every line of copy, one file per language
+public/                 the tab's icon: svg, the .ico and the touch png
 project.inlang/        the inlang project: languages and message format
 i18n.config.ts         Paraglide options, shared by Vite and the CLI
 drizzle/               SQL migrations applied by wrangler
