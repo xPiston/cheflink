@@ -11,6 +11,7 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { useAppEvents } from '#/hooks/use-app-events'
+import { m } from '#/paraglide/messages'
 import { createOrder } from '#/server/functions/orders'
 import { listDishes, type Dish } from '#/server/functions/dishes'
 
@@ -77,13 +78,13 @@ function TakeOrderPage() {
         },
       }),
     onSuccess: (order) => {
-      toast.success(`Commande envoyee en cuisine - ${order.tableLabel}`)
+      toast.success(m.order_sent({ table: order.tableLabel }))
       setDraft({})
       setNote('')
       setTableLabel('')
       void queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
-    onError: () => toast.error("La commande n'est pas partie. Reessayez."),
+    onError: () => toast.error(m.order_send_failed()),
   })
 
   const add = (dishId: string, delta: number) =>
@@ -105,14 +106,14 @@ function TakeOrderPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <section className="space-y-6">
-        <h1 className="text-2xl font-semibold">Prise de commande</h1>
+        <h1 className="text-2xl font-semibold">{m.nav_take_order()}</h1>
 
-        {dishes.isLoading ? <p className="text-sm text-muted-foreground">Chargement de la carte...</p> : null}
+        {dishes.isLoading ? (
+          <p className="text-sm text-muted-foreground">{m.order_menu_loading()}</p>
+        ) : null}
 
         {dishes.isSuccess && available.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Aucun plat disponible. Ajoutez-en depuis l&apos;onglet Plats.
-          </p>
+          <p className="text-sm text-muted-foreground">{m.order_no_dish_available()}</p>
         ) : null}
 
         {byCategory.map(([category, items]) => (
@@ -135,7 +136,7 @@ function TakeOrderPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        aria-label={`Retirer un ${dish.name}`}
+                        aria-label={m.order_remove_one({ dish: dish.name })}
                         disabled={!draft[dish.id]}
                         onClick={() => add(dish.id, -1)}
                       >
@@ -144,7 +145,7 @@ function TakeOrderPage() {
                       <span className="w-6 text-center tabular-nums">{draft[dish.id] ?? 0}</span>
                       <Button
                         size="icon"
-                        aria-label={`Ajouter un ${dish.name}`}
+                        aria-label={m.order_add_one({ dish: dish.name })}
                         onClick={() => add(dish.id, 1)}
                       >
                         <Plus className="size-4" aria-hidden />
@@ -163,26 +164,24 @@ function TakeOrderPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              Commande
-              <Badge variant="secondary">{totalDishes} plat(s)</Badge>
+              {m.order_basket_title()}
+              <Badge variant="secondary">{m.order_dish_count({ count: totalDishes })}</Badge>
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="table">Table</Label>
+              <Label htmlFor="table">{m.order_table()}</Label>
               <Input
                 id="table"
-                placeholder="Table 4, comptoir..."
+                placeholder={m.order_table_placeholder()}
                 value={tableLabel}
                 onChange={(event) => setTableLabel(event.target.value)}
               />
             </div>
 
             {lines.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Ajoutez des plats depuis la carte.
-              </p>
+              <p className="text-sm text-muted-foreground">{m.order_basket_empty()}</p>
             ) : (
               <ul className="space-y-2">
                 {lines.map((line) => (
@@ -194,7 +193,7 @@ function TakeOrderPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`Enlever ${line.dish.name}`}
+                      aria-label={m.order_line_remove({ dish: line.dish.name })}
                       onClick={() => add(line.dish.id, -line.quantity)}
                     >
                       <Trash2 className="size-4" aria-hidden />
@@ -205,11 +204,11 @@ function TakeOrderPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="note">Note pour la cuisine</Label>
+              <Label htmlFor="note">{m.order_note_label()}</Label>
               <Textarea
                 id="note"
                 rows={2}
-                placeholder="Sans oignons, allergie..."
+                placeholder={m.order_note_placeholder()}
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
               />
@@ -217,13 +216,11 @@ function TakeOrderPage() {
 
             <Button className="w-full" disabled={!canSend} onClick={() => send.mutate()}>
               <Send className="size-4" aria-hidden />
-              {send.isPending ? 'Envoi...' : 'Envoyer en cuisine'}
+              {send.isPending ? m.order_sending() : m.order_send()}
             </Button>
 
             {lines.length > 0 && tableLabel.trim().length === 0 ? (
-              <p className="text-center text-xs text-muted-foreground">
-                Indiquez la table pour pouvoir envoyer.
-              </p>
+              <p className="text-center text-xs text-muted-foreground">{m.order_need_table()}</p>
             ) : null}
           </CardContent>
         </Card>

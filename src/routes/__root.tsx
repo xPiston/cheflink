@@ -3,6 +3,7 @@ import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/reac
 
 import { Toaster } from '#/components/ui/sonner'
 import { DEFAULT_THEME, THEME_INIT_SCRIPT } from '#/lib/theme'
+import { getLocale } from '#/paraglide/runtime'
 import type { SessionUser } from '#/server/auth'
 import { me } from '#/server/functions/auth'
 
@@ -43,8 +44,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
      * the document before the first paint, and `suppressHydrationWarning` stops
      * React complaining about the gap it just created itself on the root
      * element.
+     *
+     * `lang`, on the other hand, IS known server-side: the locale lives in a
+     * cookie, which is exactly why it is kept in one rather than in
+     * `localStorage` like the theme. `src/server.ts` resolves it before this
+     * renders, so the client hydrates with the same value and there is nothing
+     * to reconcile - and no flash of the wrong language.
      */
-    <html lang="fr" className={DEFAULT_THEME === 'sombre' ? 'dark' : ''} suppressHydrationWarning>
+    <html
+      lang={getLocale()}
+      className={DEFAULT_THEME === 'sombre' ? 'dark' : ''}
+      suppressHydrationWarning
+    >
       <head>
         <HeadContent />
         {/*

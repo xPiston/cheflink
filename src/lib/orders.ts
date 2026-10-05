@@ -42,23 +42,37 @@ export type OrderLineInput = {
   quantity: number
 }
 
+/**
+ * The messages below are NOT translated, on purpose.
+ *
+ * Two reasons. They never reach a screen: the pages that can trigger them show
+ * their own wording, because a broken rule means "this order is not valid", not
+ * a sentence to paste in front of a customer. And this module is deliberately
+ * dependency-free - the rules of the house, testable without a database, a
+ * browser or a compiled message catalogue - which importing Paraglide here
+ * would end.
+ *
+ * So they are what a developer reads in a log or a stack trace, and they are in
+ * the same language as the code. The user-facing wording lives in
+ * `messages/*.json`; what crosses the boundary is the error's NAME.
+ */
 export class EmptyOrderError extends Error {
   constructor() {
-    super('Une commande doit contenir au moins un plat.')
+    super('An order must contain at least one dish.')
     this.name = 'EmptyOrderError'
   }
 }
 
 export class InvalidQuantityError extends Error {
   constructor(readonly quantity: number) {
-    super(`Quantite invalide : ${quantity}. Attendu un entier entre 1 et 99.`)
+    super(`Invalid quantity: ${quantity}. Expected an integer between 1 and 99.`)
     this.name = 'InvalidQuantityError'
   }
 }
 
 export class UnavailableDishError extends Error {
   constructor(readonly dishName: string) {
-    super(`"${dishName}" n'est plus disponible.`)
+    super(`"${dishName}" is no longer available.`)
     this.name = 'UnavailableDishError'
   }
 }

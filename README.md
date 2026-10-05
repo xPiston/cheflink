@@ -12,7 +12,7 @@ On Cloudflare, within the free plan.
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 [![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
-[![Tests](https://img.shields.io/badge/tests-10%20passing-22C55E)](#-tests)
+[![Tests](https://img.shields.io/badge/tests-14%20passing-22C55E)](#-tests)
 [![Deploy](https://img.shields.io/badge/deploy-on%20push%20to%20main-22C55E?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -31,8 +31,9 @@ Two modes on the same account — and the mode belongs to the **device**, not th
 person. The counter station stays in bar mode, the kitchen tablet in kitchen
 mode, and either can switch with one click.
 
-> The interface is in French, as is the team using it. Everything below — and
-> every comment in the code — explains the decisions, not just the mechanics.
+> The interface comes in **French and English**, French by default because that
+> is the language of the team using it. Everything below — and every comment in
+> the code — explains the decisions, not just the mechanics.
 
 ## ✨ What's inside
 
@@ -49,8 +50,11 @@ mode, and either can switch with one click.
 - 🔐 **Session authentication** — PBKDF2 through WebCrypto, `httpOnly` cookie
 - 📱 **Built for a tablet** — large targets, single column in portrait
 - 🌗 **Light or dark**, remembered per device, applied before the first paint
+- 🌍 **French and English**, chosen per device and resolved **server-side**, so
+  the first HTML is already in the right language
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
-- ✅ **10 tests on the business rules**, with no database and no browser
+- ✅ **14 tests** on the business rules and the message catalogues, with no
+  database and no browser
 
 | | |
 | :--: | :--: |
@@ -74,6 +78,48 @@ mode, and either can switch with one click.
 Same screen, one tap apart. The note carries the allergy, so it gets a tone of
 its own in each theme rather than one amber that only works against a dark
 background.
+
+## 🌍 Two languages
+
+French and English, through [Paraglide JS](https://paraglidejs.com) — the
+library TanStack Router's own i18n guide builds its examples on. TanStack ships
+no i18n package of its own.
+
+The copy lives in `messages/fr.json` and `messages/en.json` and is **compiled**
+into `src/paraglide`: each message becomes a function, so a page only ships the
+messages it uses, and a typo in a message name is a type error rather than a
+blank on a screen.
+
+Three decisions worth the words:
+
+**The language is a cookie, not `localStorage`.** The theme and the bar/kitchen
+mode live in `localStorage` and are corrected after the server has rendered —
+for a colour that costs nothing, and an inline script hides it. Text cannot be
+corrected that way: the page would arrive in French and visibly switch. A cookie
+is readable by the server, so the first HTML is already in the right language.
+
+**The locale never appears in the URL.** The screens sit behind a login on fixed
+tablets: there is nothing to index and nothing to share, so `/fr/cuisine` would
+only add another thing to keep in sync — starting with `/api/ws`, which must not
+be localized. Resolution order is cookie → `Accept-Language` → French.
+
+**Some French stays in the code, on purpose.** `en_attente` and `terminee` are
+in D1; `clair` and `sombre` are in the browsers of devices already in service.
+Renaming them would need a migration for the first and would silently reset
+everyone's choice for the second. They are stored values, not copy — the labels
+on top of them are translated.
+
+| | |
+| :-- | :-- |
+| `messages/*.json` | the copy, one file per language |
+| `i18n.config.ts` | compiler options, shared by Vite and `npm run typecheck` |
+| `src/server.ts` | resolves the locale for the request, before anything renders |
+| `src/lib/locale.ts` | language names and the date formats that follow them |
+
+Plurals go through CLDR rather than a parenthesised `(s)`: French counts 0 as
+singular ("0 commande"), English does not ("0 orders"). Dates follow suit —
+English here means British English, because 05/10 should not mean October in one
+language and May in the other on the same screen.
 
 ## 🚀 Getting started
 
@@ -150,7 +196,10 @@ build output into `.output/server/wrangler.json`, which is what wrangler ships.
 ```
 src/
   lib/orders.ts        pure rules: statuses, line merging, urgency
+  lib/locale.ts        language names, and the date formats that follow them
   db/                  Drizzle schema and access to the request's D1
+  paraglide/           generated from messages/ - not committed
+  server.ts            Worker entry: resolves the request's language
   server/
     cloudflare.ts      the current request's bindings (D1, Durable Object)
     password.ts        PBKDF2 via WebCrypto, shared with the seed script
@@ -165,8 +214,12 @@ src/
     _app.bar.*         bar mode
     _app.cuisine.tsx   kitchen mode
     api.ws.ts          the real-time entry point
+messages/{fr,en}.json  every line of copy in the interface
+project.inlang/        the inlang project: languages and message format
+i18n.config.ts         Paraglide options, shared by Vite and the CLI
 drizzle/               SQL migrations applied by wrangler
 scripts/seed.ts        generates the demo data as SQL
+scripts/i18n-compile.ts  compiles the messages outside Vite, for tsc
 exports.cloudflare.ts  exposes the Realtime class to the Worker
 wrangler.jsonc         D1 and Durable Object bindings
 ```
@@ -243,6 +296,12 @@ npm run typecheck
 The order rules live in `src/lib/orders.ts` with no database and no React
 imports: the state machine, line merging, urgency thresholds. Which is why these
 tests run in milliseconds.
+
+`src/lib/i18n.test.ts` guards the message catalogues instead, because nothing
+else does: Paraglide is silent about a message that exists in French and not in
+English — it serves French and compiles fine. The tests check that both files
+carry the same keys, that a translation has not dropped a `{placeholder}`, and
+that no message has outlived the code that called it.
 
 ## ⚠️ Not included
 

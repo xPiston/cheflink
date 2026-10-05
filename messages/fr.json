@@ -1,0 +1,118 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+
+  "common_loading": "Chargement...",
+  "common_cancel": "Annuler",
+  "common_save": "Enregistrer",
+  "common_saving": "Enregistrement...",
+  "common_delete": "Supprimer",
+
+  "shell_device_mode": "Mode de l'appareil",
+  "shell_mode_bar": "Bar",
+  "shell_mode_kitchen": "Cuisine",
+  "shell_sign_out": "Se déconnecter",
+  "shell_switch_to_light": "Passer en thème clair",
+  "shell_switch_to_dark": "Passer en thème sombre",
+  "shell_change_language": "Changer de langue",
+
+  "nav_take_order": "Prise de commande",
+  "nav_history": "Historique",
+  "nav_dishes": "Plats",
+  "nav_orders": "Commandes",
+
+  "home_opening": "Ouverture du service...",
+
+  "login_subtitle": "Connectez-vous pour prendre le service.",
+  "login_email": "Adresse e-mail",
+  "login_password": "Mot de passe",
+  "login_submit": "Se connecter",
+  "login_submitting": "Connexion...",
+
+  "order_menu_loading": "Chargement de la carte...",
+  "order_no_dish_available": "Aucun plat disponible. Ajoutez-en depuis l'onglet Plats.",
+  "order_remove_one": "Retirer un {dish}",
+  "order_add_one": "Ajouter un {dish}",
+  "order_basket_title": "Commande",
+  "order_dish_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} plat",
+        "countPlural=other": "{count} plats"
+      }
+    }
+  ],
+  "order_table": "Table",
+  "order_table_placeholder": "Table 4, comptoir...",
+  "order_basket_empty": "Ajoutez des plats depuis la carte.",
+  "order_line_remove": "Enlever {dish}",
+  "order_note_label": "Note pour la cuisine",
+  "order_note_placeholder": "Sans oignons, allergie...",
+  "order_send": "Envoyer en cuisine",
+  "order_sending": "Envoi...",
+  "order_need_table": "Indiquez la table pour pouvoir envoyer.",
+  "order_sent": "Commande envoyée en cuisine - {table}",
+  "order_send_failed": "La commande n'est pas partie. Réessayez.",
+
+  "kitchen_title": "En cuisine",
+  "kitchen_order_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} commande",
+        "countPlural=other": "{count} commandes"
+      }
+    }
+  ],
+  "kitchen_sound_on": "Son actif",
+  "kitchen_enable_sound": "Activer le son",
+  "kitchen_sound_enabled": "Son activé pour cette tablette.",
+  "kitchen_sound_refused": "Ce navigateur refuse l'audio.",
+  "kitchen_empty": "Rien à préparer. Les nouvelles commandes apparaissent ici toutes seules.",
+  "kitchen_mark_ready": "Marquer la commande {table} comme prête",
+  "kitchen_tap_to_complete": "Appuyer pour marquer prêt",
+  "kitchen_waited_minutes": "{minutes} min",
+  "kitchen_complete_failed": "La commande n'a pas pu être validée.",
+
+  "history_filter_all": "Toutes",
+  "history_filter_pending": "En attente",
+  "history_filter_done": "Terminées",
+  "history_status_pending": "En attente",
+  "history_status_done": "Terminée",
+  "history_empty": "Aucune commande pour ce filtre.",
+  "history_sent_at": "Envoyée à {time}",
+  "history_ready_at": "prête à {time}",
+  "history_note": "Note : {note}",
+
+  "dishes_new": "Nouveau plat",
+  "dishes_edit": "Modifier le plat",
+  "dishes_empty": "La carte est vide. Ajoutez un premier plat.",
+  "dishes_unavailable": "Indisponible",
+  "dishes_edit_one": "Modifier {dish}",
+  "dishes_delete_one": "Supprimer {dish}",
+  "dishes_form_hint": "Un plat indisponible reste dans la carte mais ne peut plus être commandé.",
+  "dishes_name": "Nom",
+  "dishes_description": "Description",
+  "dishes_category": "Catégorie",
+  "dishes_category_placeholder": "Plats, Desserts...",
+  "dishes_available": "Disponible à la commande",
+  "dishes_saved": "« {dish} » enregistré.",
+  "dishes_save_failed": "Impossible d'enregistrer.",
+  "dishes_deleted": "Plat supprimé.",
+  "dishes_delete_failed": "Impossible de supprimer ce plat.",
+  "dishes_delete_title": "Supprimer « {dish} » ?",
+  "dishes_delete_hint": "Les commandes déjà passées gardent le nom du plat : l'historique n'est pas touché.",
+
+  "error_sign_in_required": "Connexion requise.",
+  "error_invalid_credentials": "Identifiants invalides.",
+  "error_email_invalid": "L'adresse e-mail n'est pas valide.",
+  "error_password_required": "Mot de passe requis.",
+  "error_dish_name_required": "Le nom est obligatoire.",
+  "error_dish_category_required": "La catégorie est obligatoire.",
+  "error_dish_not_found": "Ce plat n'existe plus.",
+  "error_table_required": "Indiquez la table.",
+  "error_at_least_one_dish": "Ajoutez au moins un plat.",
+  "error_order_not_found": "Cette commande n'existe plus."
+}

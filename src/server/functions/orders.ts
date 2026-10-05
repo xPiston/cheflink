@@ -12,6 +12,7 @@ import {
   mergeLines,
   type OrderStatus,
 } from '#/lib/orders'
+import { m } from '#/paraglide/messages'
 import { newId, requireUser } from '#/server/auth'
 import { publish } from '#/server/events'
 
@@ -31,12 +32,21 @@ export type OrderView = {
   lines: OrderLineView[]
 }
 
+/**
+ * The validation messages are functions, not strings: Zod calls them at parse
+ * time, inside the request, so the same schema answers in the language of
+ * whoever sent the order. See the note in `dishes.ts`.
+ */
 const createOrderInput = z.object({
-  tableLabel: z.string().trim().min(1, 'Indiquez la table.').max(40),
+  tableLabel: z
+    .string()
+    .trim()
+    .min(1, { error: () => m.error_table_required() })
+    .max(40),
   note: z.string().trim().max(240).optional().or(z.literal('')),
   lines: z
     .array(z.object({ dishId: z.string().uuid(), quantity: z.number().int().min(1).max(99) }))
-    .min(1, 'Ajoutez au moins un plat.'),
+    .min(1, { error: () => m.error_at_least_one_dish() }),
 })
 
 /**
@@ -144,7 +154,7 @@ export const listOrderHistory = createServerFn({ method: 'GET' })
 
 export class OrderNotFoundError extends Error {
   constructor(readonly orderId: string) {
-    super('Cette commande n existe plus.')
+    super(m.error_order_not_found())
     this.name = 'OrderNotFoundError'
   }
 }

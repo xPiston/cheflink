@@ -11,6 +11,7 @@ import { useAppEvents } from '#/hooks/use-app-events'
 import { useOrderChime } from '#/hooks/use-order-chime'
 import { urgency, waitingMinutes } from '#/lib/orders'
 import { cn } from '#/lib/utils'
+import { m } from '#/paraglide/messages'
 import { completeOrder, listPendingOrders, type OrderView } from '#/server/functions/orders'
 
 export const Route = createFileRoute('/_app/cuisine')({
@@ -83,7 +84,7 @@ function KitchenPage() {
     },
     onError: (_error, _orderId, context) => {
       queryClient.setQueryData(['orders', 'pending'], context?.previous)
-      toast.error("La commande n'a pas pu etre validee.")
+      toast.error(m.kitchen_complete_failed())
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   })
@@ -94,9 +95,9 @@ function KitchenPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-semibold">
-          En cuisine
+          {m.kitchen_title()}
           <span className="ml-2 text-base font-normal text-muted-foreground">
-            {pending.length} commande(s)
+            {m.kitchen_order_count({ count: pending.length })}
           </span>
         </h1>
 
@@ -109,7 +110,7 @@ function KitchenPage() {
         {chime.enabled ? (
           <Badge variant="secondary" className="gap-1">
             <BellRing className="size-3.5" aria-hidden />
-            Son actif
+            {m.kitchen_sound_on()}
           </Badge>
         ) : (
           <Button
@@ -118,24 +119,24 @@ function KitchenPage() {
               const ready = await chime.enable()
               if (ready) {
                 chime.play()
-                toast.success('Son active pour cette tablette.')
+                toast.success(m.kitchen_sound_enabled())
               } else {
-                toast.error("Ce navigateur refuse l'audio.")
+                toast.error(m.kitchen_sound_refused())
               }
             }}
           >
             <BellRing className="size-4" aria-hidden />
-            Activer le son
+            {m.kitchen_enable_sound()}
           </Button>
         )}
       </div>
 
-      {orders.isLoading ? <p className="text-sm text-muted-foreground">Chargement...</p> : null}
+      {orders.isLoading ? <p className="text-sm text-muted-foreground">{m.common_loading()}</p> : null}
 
       {orders.isSuccess && pending.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center text-muted-foreground">
-            Rien a preparer. Les nouvelles commandes apparaissent ici toutes seules.
+            {m.kitchen_empty()}
           </CardContent>
         </Card>
       ) : null}
@@ -156,7 +157,7 @@ function KitchenPage() {
               type="button"
               onClick={() => complete.mutate(order.id)}
               className="text-left"
-              aria-label={`Marquer la commande ${order.tableLabel} comme prete`}
+              aria-label={m.kitchen_mark_ready({ table: order.tableLabel })}
             >
               <Card
                 className={cn(
@@ -172,7 +173,7 @@ function KitchenPage() {
                       className="gap-1 shrink-0"
                     >
                       <Clock className="size-3.5" aria-hidden />
-                      {waited} min
+                      {m.kitchen_waited_minutes({ minutes: waited })}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -203,7 +204,7 @@ function KitchenPage() {
 
                   <div className="flex items-center gap-2 pt-1 text-sm text-muted-foreground">
                     <Check className="size-4" aria-hidden />
-                    Appuyer pour marquer pret
+                    {m.kitchen_tap_to_complete()}
                   </div>
                 </CardContent>
               </Card>

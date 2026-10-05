@@ -7,6 +7,7 @@ import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
+import { m } from '#/paraglide/messages'
 import { login } from '#/server/functions/auth'
 
 export const Route = createFileRoute('/connexion')({
@@ -43,7 +44,7 @@ function LoginPage() {
           </div>
           <div>
             <CardTitle>ChefLink</CardTitle>
-            <CardDescription>Connectez-vous pour prendre le service.</CardDescription>
+            <CardDescription>{m.login_subtitle()}</CardDescription>
           </div>
         </CardHeader>
 
@@ -56,7 +57,7 @@ function LoginPage() {
             }}
           >
             <div className="space-y-2">
-              <Label htmlFor="email">Adresse e-mail</Label>
+              <Label htmlFor="email">{m.login_email()}</Label>
               <Input
                 id="email"
                 type="email"
@@ -68,7 +69,7 @@ function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{m.login_password()}</Label>
               <Input
                 id="password"
                 type="password"
@@ -81,12 +82,12 @@ function LoginPage() {
 
             {signIn.isError ? (
               <p role="alert" className="text-sm text-destructive">
-                Identifiants invalides.
+                {m.error_invalid_credentials()}
               </p>
             ) : null}
 
             <Button type="submit" className="w-full" disabled={signIn.isPending}>
-              {signIn.isPending ? 'Connexion...' : 'Se connecter'}
+              {signIn.isPending ? m.login_submitting() : m.login_submit()}
             </Button>
           </form>
         </CardContent>

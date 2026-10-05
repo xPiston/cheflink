@@ -3,6 +3,7 @@ import { getCookie, setCookie } from '@tanstack/react-start/server'
 
 import { getDb } from '#/db/client'
 import { sessions, users, type UserRow } from '#/db/schema'
+import { m } from '#/paraglide/messages'
 import { toHex } from './password'
 
 export { hashPassword, verifyPassword } from './password'
@@ -76,9 +77,14 @@ export async function currentUser(): Promise<SessionUser | null> {
   return toSessionUser(row.user)
 }
 
+/**
+ * A session that ran out mid-service: this one is shown. A page that echoes
+ * `error.message` into a toast - the dishes page does - would otherwise tell
+ * the user nothing about why their save did nothing.
+ */
 export class UnauthenticatedError extends Error {
   constructor() {
-    super('Connexion requise.')
+    super(m.error_sign_in_required())
     this.name = 'UnauthenticatedError'
   }
 }

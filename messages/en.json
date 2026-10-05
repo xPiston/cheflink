@@ -1,0 +1,118 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+
+  "common_loading": "Loading...",
+  "common_cancel": "Cancel",
+  "common_save": "Save",
+  "common_saving": "Saving...",
+  "common_delete": "Delete",
+
+  "shell_device_mode": "Device mode",
+  "shell_mode_bar": "Bar",
+  "shell_mode_kitchen": "Kitchen",
+  "shell_sign_out": "Sign out",
+  "shell_switch_to_light": "Switch to the light theme",
+  "shell_switch_to_dark": "Switch to the dark theme",
+  "shell_change_language": "Change language",
+
+  "nav_take_order": "New order",
+  "nav_history": "History",
+  "nav_dishes": "Dishes",
+  "nav_orders": "Orders",
+
+  "home_opening": "Opening the service...",
+
+  "login_subtitle": "Sign in to start your shift.",
+  "login_email": "Email address",
+  "login_password": "Password",
+  "login_submit": "Sign in",
+  "login_submitting": "Signing in...",
+
+  "order_menu_loading": "Loading the menu...",
+  "order_no_dish_available": "No dish available. Add one from the Dishes tab.",
+  "order_remove_one": "Remove one {dish}",
+  "order_add_one": "Add one {dish}",
+  "order_basket_title": "Order",
+  "order_dish_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} dish",
+        "countPlural=other": "{count} dishes"
+      }
+    }
+  ],
+  "order_table": "Table",
+  "order_table_placeholder": "Table 4, counter...",
+  "order_basket_empty": "Add dishes from the menu.",
+  "order_line_remove": "Remove {dish}",
+  "order_note_label": "Note for the kitchen",
+  "order_note_placeholder": "No onions, allergy...",
+  "order_send": "Send to the kitchen",
+  "order_sending": "Sending...",
+  "order_need_table": "Enter the table before sending.",
+  "order_sent": "Order sent to the kitchen - {table}",
+  "order_send_failed": "The order did not go through. Try again.",
+
+  "kitchen_title": "In the kitchen",
+  "kitchen_order_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} order",
+        "countPlural=other": "{count} orders"
+      }
+    }
+  ],
+  "kitchen_sound_on": "Sound on",
+  "kitchen_enable_sound": "Enable sound",
+  "kitchen_sound_enabled": "Sound enabled on this tablet.",
+  "kitchen_sound_refused": "This browser refuses to play audio.",
+  "kitchen_empty": "Nothing to prepare. New orders show up here on their own.",
+  "kitchen_mark_ready": "Mark the {table} order as ready",
+  "kitchen_tap_to_complete": "Tap to mark as ready",
+  "kitchen_waited_minutes": "{minutes} min",
+  "kitchen_complete_failed": "The order could not be completed.",
+
+  "history_filter_all": "All",
+  "history_filter_pending": "Pending",
+  "history_filter_done": "Done",
+  "history_status_pending": "Pending",
+  "history_status_done": "Done",
+  "history_empty": "No order matches this filter.",
+  "history_sent_at": "Sent at {time}",
+  "history_ready_at": "ready at {time}",
+  "history_note": "Note: {note}",
+
+  "dishes_new": "New dish",
+  "dishes_edit": "Edit the dish",
+  "dishes_empty": "The menu is empty. Add a first dish.",
+  "dishes_unavailable": "Unavailable",
+  "dishes_edit_one": "Edit {dish}",
+  "dishes_delete_one": "Delete {dish}",
+  "dishes_form_hint": "An unavailable dish stays on the menu but can no longer be ordered.",
+  "dishes_name": "Name",
+  "dishes_description": "Description",
+  "dishes_category": "Category",
+  "dishes_category_placeholder": "Mains, Desserts...",
+  "dishes_available": "Available to order",
+  "dishes_saved": "\"{dish}\" saved.",
+  "dishes_save_failed": "Could not save.",
+  "dishes_deleted": "Dish deleted.",
+  "dishes_delete_failed": "Could not delete this dish.",
+  "dishes_delete_title": "Delete \"{dish}\"?",
+  "dishes_delete_hint": "Orders already placed keep the dish name: the history is left untouched.",
+
+  "error_sign_in_required": "You need to sign in.",
+  "error_invalid_credentials": "Invalid credentials.",
+  "error_email_invalid": "That email address is not valid.",
+  "error_password_required": "A password is required.",
+  "error_dish_name_required": "The name is required.",
+  "error_dish_category_required": "The category is required.",
+  "error_dish_not_found": "This dish no longer exists.",
+  "error_table_required": "Enter the table.",
+  "error_at_least_one_dish": "Add at least one dish.",
+  "error_order_not_found": "This order no longer exists."
+}

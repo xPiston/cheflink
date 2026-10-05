@@ -19,6 +19,7 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { useAppEvents } from '#/hooks/use-app-events'
+import { m } from '#/paraglide/messages'
 import { createDish, deleteDish, listDishes, updateDish, type Dish } from '#/server/functions/dishes'
 
 export const Route = createFileRoute('/_app/plats')({
@@ -73,22 +74,27 @@ function DishesPage() {
         : createDish({ data: payload })
     },
     onSuccess: async (dish) => {
-      toast.success(`"${dish.name}" enregistre.`)
+      toast.success(m.dishes_saved({ dish: dish.name }))
       setForm(null)
       await invalidate()
     },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Impossible d'enregistrer."),
+    /**
+     * The server's message is used as-is rather than replaced by a generic
+     * one: it says WHICH field is wrong, or that the dish was deleted from
+     * another screen a moment ago. It is translated server-side, in the
+     * language of this request - see the note in src/server/functions/dishes.ts.
+     */
+    onError: (error) => toast.error(error instanceof Error ? error.message : m.dishes_save_failed()),
   })
 
   const remove = useMutation({
     mutationFn: (dish: Dish) => deleteDish({ data: { id: dish.id } }),
     onSuccess: async () => {
-      toast.success('Plat supprime.')
+      toast.success(m.dishes_deleted())
       setPendingDelete(null)
       await invalidate()
     },
-    onError: () => toast.error('Impossible de supprimer ce plat.'),
+    onError: () => toast.error(m.dishes_delete_failed()),
   })
 
   const rows = dishes.data ?? []
@@ -96,19 +102,19 @@ function DishesPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-4">
-        <h1 className="mr-auto text-2xl font-semibold">Plats</h1>
+        <h1 className="mr-auto text-2xl font-semibold">{m.nav_dishes()}</h1>
         <Button onClick={() => setForm(EMPTY)}>
           <Plus className="size-4" aria-hidden />
-          Nouveau plat
+          {m.dishes_new()}
         </Button>
       </div>
 
-      {dishes.isLoading ? <p className="text-sm text-muted-foreground">Chargement...</p> : null}
+      {dishes.isLoading ? <p className="text-sm text-muted-foreground">{m.common_loading()}</p> : null}
 
       {dishes.isSuccess && rows.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center text-muted-foreground">
-            La carte est vide. Ajoutez un premier plat.
+            {m.dishes_empty()}
           </CardContent>
         </Card>
       ) : null}
@@ -121,7 +127,7 @@ function DishesPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{dish.name}</span>
                   <Badge variant="outline">{dish.category}</Badge>
-                  {dish.available ? null : <Badge variant="secondary">Indisponible</Badge>}
+                  {dish.available ? null : <Badge variant="secondary">{m.dishes_unavailable()}</Badge>}
                 </div>
                 {dish.description ? (
                   <p className="mt-1 text-sm text-muted-foreground">{dish.description}</p>
@@ -132,7 +138,7 @@ function DishesPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={`Modifier ${dish.name}`}
+                  aria-label={m.dishes_edit_one({ dish: dish.name })}
                   onClick={() =>
                     setForm({
                       id: dish.id,
@@ -148,7 +154,7 @@ function DishesPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={`Supprimer ${dish.name}`}
+                  aria-label={m.dishes_delete_one({ dish: dish.name })}
                   onClick={() => setPendingDelete(dish)}
                 >
                   <Trash2 className="size-4" aria-hidden />
@@ -162,10 +168,8 @@ function DishesPage() {
       <Dialog open={form !== null} onOpenChange={(open) => (open ? null : setForm(null))}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{form?.id ? 'Modifier le plat' : 'Nouveau plat'}</DialogTitle>
-            <DialogDescription>
-              Un plat indisponible reste dans la carte mais ne peut plus etre commande.
-            </DialogDescription>
+            <DialogTitle>{form?.id ? m.dishes_edit() : m.dishes_new()}</DialogTitle>
+            <DialogDescription>{m.dishes_form_hint()}</DialogDescription>
           </DialogHeader>
 
           {form ? (
@@ -177,7 +181,7 @@ function DishesPage() {
               }}
             >
               <div className="space-y-2">
-                <Label htmlFor="name">Nom</Label>
+                <Label htmlFor="name">{m.dishes_name()}</Label>
                 <Input
                   id="name"
                   required
@@ -187,7 +191,7 @@ function DishesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{m.dishes_description()}</Label>
                 <Textarea
                   id="description"
                   rows={2}
@@ -197,11 +201,11 @@ function DishesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Categorie</Label>
+                <Label htmlFor="category">{m.dishes_category()}</Label>
                 <Input
                   id="category"
                   required
-                  placeholder="Plats, Desserts..."
+                  placeholder={m.dishes_category_placeholder()}
                   value={form.category}
                   onChange={(event) => setForm({ ...form, category: event.target.value })}
                 />
@@ -214,15 +218,15 @@ function DishesPage() {
                   checked={form.available}
                   onChange={(event) => setForm({ ...form, available: event.target.checked })}
                 />
-                Disponible a la commande
+                {m.dishes_available()}
               </label>
 
               <DialogFooter>
                 <Button type="button" variant="ghost" onClick={() => setForm(null)}>
-                  Annuler
+                  {m.common_cancel()}
                 </Button>
                 <Button type="submit" disabled={save.isPending}>
-                  {save.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                  {save.isPending ? m.common_saving() : m.common_save()}
                 </Button>
               </DialogFooter>
             </form>
@@ -236,23 +240,20 @@ function DishesPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer « {pendingDelete?.name} » ?</DialogTitle>
-            <DialogDescription>
-              Les commandes deja passees gardent le nom du plat : l&apos;historique n&apos;est pas
-              touche.
-            </DialogDescription>
+            <DialogTitle>{m.dishes_delete_title({ dish: pendingDelete?.name ?? '' })}</DialogTitle>
+            <DialogDescription>{m.dishes_delete_hint()}</DialogDescription>
           </DialogHeader>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPendingDelete(null)}>
-              Annuler
+              {m.common_cancel()}
             </Button>
             <Button
               variant="destructive"
               disabled={remove.isPending}
               onClick={() => pendingDelete && remove.mutate(pendingDelete)}
             >
-              Supprimer
+              {m.common_delete()}
             </Button>
           </DialogFooter>
         </DialogContent>

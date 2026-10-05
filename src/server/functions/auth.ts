@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { getDb } from '#/db/client'
 import { users } from '#/db/schema'
+import { m } from '#/paraglide/messages'
 import {
   createSession,
   currentUser,
@@ -14,14 +15,24 @@ import {
 
 export class InvalidCredentialsError extends Error {
   constructor() {
-    super('Identifiants invalides.')
+    super(m.error_invalid_credentials())
     this.name = 'InvalidCredentialsError'
   }
 }
 
+/**
+ * The validation messages are functions, not strings.
+ *
+ * A schema is built once, when the module is first imported; a message has to
+ * be read once per request, in the language of whoever sent it. Zod calls these
+ * callbacks at parse time - inside the request, where `src/server.ts` has set
+ * the locale - so the same schema answers in French to the bar and in English
+ * to an English tablet. Written as plain strings they would be frozen in
+ * whatever language the server started in.
+ */
 const credentials = z.object({
-  email: z.string().email("L'adresse e-mail n'est pas valide."),
-  password: z.string().min(1, 'Mot de passe requis.'),
+  email: z.string().email({ error: () => m.error_email_invalid() }),
+  password: z.string().min(1, { error: () => m.error_password_required() }),
 })
 
 export const login = createServerFn({ method: 'POST' })

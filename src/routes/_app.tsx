@@ -12,9 +12,12 @@ import { ChefHat, ClipboardList, History, LogOut, Moon, Sun, UtensilsCrossed, Wi
 import { useEffect } from 'react'
 
 import { Button } from '#/components/ui/button'
+import { LOCALE_LABEL } from '#/lib/locale'
 import { useMode, type Mode } from '#/lib/mode'
 import { useTheme } from '#/lib/theme'
 import { cn } from '#/lib/utils'
+import { m } from '#/paraglide/messages'
+import { getLocale, setLocale } from '#/paraglide/runtime'
 import { logout } from '#/server/functions/auth'
 
 /**
@@ -91,19 +94,19 @@ function AppLayout() {
           <div
             className="flex items-center rounded-lg border border-border/60 p-1"
             role="group"
-            aria-label="Mode de l'appareil"
+            aria-label={m.shell_device_mode()}
           >
             <ModeButton
               active={mode === 'bar'}
               onClick={() => switchMode('bar')}
               icon={<Wine className="size-4" aria-hidden />}
-              label="Bar"
+              label={m.shell_mode_bar()}
             />
             <ModeButton
               active={mode === 'cuisine'}
               onClick={() => switchMode('cuisine')}
               icon={<ChefHat className="size-4" aria-hidden />}
-              label="Cuisine"
+              label={m.shell_mode_kitchen()}
             />
           </div>
 
@@ -111,18 +114,18 @@ function AppLayout() {
             {mode === 'bar' ? (
               <>
                 <NavLink to="/bar" icon={<ClipboardList className="size-4" aria-hidden />}>
-                  Prise de commande
+                  {m.nav_take_order()}
                 </NavLink>
                 <NavLink to="/bar/historique" icon={<History className="size-4" aria-hidden />}>
-                  Historique
+                  {m.nav_history()}
                 </NavLink>
                 <NavLink to="/plats" icon={<UtensilsCrossed className="size-4" aria-hidden />}>
-                  Plats
+                  {m.nav_dishes()}
                 </NavLink>
               </>
             ) : (
               <NavLink to="/cuisine" icon={<ChefHat className="size-4" aria-hidden />}>
-                Commandes
+                {m.nav_orders()}
               </NavLink>
             )}
           </nav>
@@ -137,7 +140,7 @@ function AppLayout() {
             <Button
               variant="ghost"
               size="icon"
-              aria-label={theme === 'sombre' ? 'Passer en theme clair' : 'Passer en theme sombre'}
+              aria-label={theme === 'sombre' ? m.shell_switch_to_light() : m.shell_switch_to_dark()}
               onClick={() => setTheme(theme === 'sombre' ? 'clair' : 'sombre')}
             >
               {theme === 'sombre' ? (
@@ -147,10 +150,12 @@ function AppLayout() {
               )}
             </Button>
 
+            <LocaleButton />
+
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Se deconnecter"
+              aria-label={m.shell_sign_out()}
               onClick={() => signOut.mutate()}
               disabled={signOut.isPending}
             >
@@ -164,6 +169,42 @@ function AppLayout() {
         <Outlet />
       </main>
     </div>
+  )
+}
+
+/**
+ * The language switch.
+ *
+ * It shows the CURRENT language, not the one you would switch to - the
+ * opposite of the theme button right next to it. The difference is deliberate:
+ * a sun says "click for light" without ambiguity, but a button reading "EN"
+ * could just as well mean "you are in English" as "switch to English", and the
+ * two readings contradict each other. Every interface that offers a language
+ * shows the current one, so we do the same, and the target language is in the
+ * accessible name and the tooltip.
+ *
+ * `setLocale` writes the cookie and reloads the document. There is no lighter
+ * way: the page was rendered server-side in the old language, and the server
+ * has to produce it again - which is also what keeps the two halves in
+ * agreement. It costs one reload, for something nobody does twice a service.
+ */
+function LocaleButton() {
+  const locale = getLocale()
+  // Two languages, so the button is a toggle. A third one would make this a
+  // menu - LOCALE_LABEL is already the list it would be built from.
+  const next = locale === 'fr' ? 'en' : 'fr'
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={m.shell_change_language()}
+      title={LOCALE_LABEL[next]}
+      onClick={() => setLocale(next)}
+      className="text-xs font-semibold"
+    >
+      {locale.toUpperCase()}
+    </Button>
   )
 }
 

@@ -1,41 +1,55 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Badge } from '#/components/ui/badge'
 import { Card, CardContent } from '#/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useAppEvents } from '#/hooks/use-app-events'
+import { dateTimeFormat } from '#/lib/locale'
 import { ORDER_STATUS, type OrderStatus } from '#/lib/orders'
+import { m } from '#/paraglide/messages'
+import { getLocale } from '#/paraglide/runtime'
 import { listOrderHistory } from '#/server/functions/orders'
 
 export const Route = createFileRoute('/_app/bar/historique')({
   component: HistoryPage,
 })
 
-type Filter = 'toutes' | OrderStatus
+/**
+ * `all` is this screen's own sentinel, not a status: it means "do not filter".
+ * Unlike the two statuses, which are the values stored in D1, it never leaves
+ * the page, so it is spelled in English like the rest of the code.
+ */
+type Filter = 'all' | OrderStatus
 
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  [ORDER_STATUS.Pending]: 'En attente',
-  [ORDER_STATUS.Done]: 'Terminee',
+/**
+ * The badge labels, as functions: a message is read at call time, from the
+ * request's locale. Holding the strings in a constant would freeze them in
+ * whichever language the module happened to be imported under.
+ */
+const STATUS_LABEL: Record<OrderStatus, () => string> = {
+  [ORDER_STATUS.Pending]: m.history_status_pending,
+  [ORDER_STATUS.Done]: m.history_status_done,
 }
-
-const dateTime = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-})
 
 function HistoryPage() {
   const queryClient = useQueryClient()
-  const [filter, setFilter] = useState<Filter>('toutes')
+  const [filter, setFilter] = useState<Filter>('all')
+
+  /**
+   * The formatter follows the language, and the language only changes on a
+   * reload, so building it once per page is enough. `Intl.DateTimeFormat` is
+   * not free: it is the kind of object you keep rather than rebuild on every
+   * row of the list.
+   */
+  const dateTime = useMemo(() => dateTimeFormat(getLocale()), [])
 
   const orders = useQuery({
     queryKey: ['orders', 'history', filter],
     queryFn: () =>
       listOrderHistory({
-        data: { status: filter === 'toutes' ? undefined : filter, limit: 100 },
+        data: { status: filter === 'all' ? undefined : filter, limit: 100 },
       }),
   })
 
@@ -55,23 +69,23 @@ function HistoryPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-4">
-        <h1 className="mr-auto text-2xl font-semibold">Historique</h1>
+        <h1 className="mr-auto text-2xl font-semibold">{m.nav_history()}</h1>
 
         <Tabs value={filter} onValueChange={(value) => setFilter(value as Filter)}>
           <TabsList>
-            <TabsTrigger value="toutes">Toutes</TabsTrigger>
-            <TabsTrigger value={ORDER_STATUS.Pending}>En attente</TabsTrigger>
-            <TabsTrigger value={ORDER_STATUS.Done}>Terminees</TabsTrigger>
+            <TabsTrigger value="all">{m.history_filter_all()}</TabsTrigger>
+            <TabsTrigger value={ORDER_STATUS.Pending}>{m.history_filter_pending()}</TabsTrigger>
+            <TabsTrigger value={ORDER_STATUS.Done}>{m.history_filter_done()}</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {orders.isLoading ? <p className="text-sm text-muted-foreground">Chargement...</p> : null}
+      {orders.isLoading ? <p className="text-sm text-muted-foreground">{m.common_loading()}</p> : null}
 
       {orders.isSuccess && rows.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center text-muted-foreground">
-            Aucune commande pour ce filtre.
+            {m.history_empty()}
           </CardContent>
         </Card>
       ) : null}
@@ -86,19 +100,21 @@ function HistoryPage() {
                   <Badge
                     variant={order.status === ORDER_STATUS.Done ? 'secondary' : 'default'}
                   >
-                    {STATUS_LABEL[order.status]}
+                    {STATUS_LABEL[order.status]()}
                   </Badge>
                 </div>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Envoyee a {dateTime.format(new Date(order.createdAt))}
+                  {m.history_sent_at({ time: dateTime.format(new Date(order.createdAt)) })}
                   {order.completedAt
-                    ? ` - prete a ${dateTime.format(new Date(order.completedAt))}`
+                    ? ` - ${m.history_ready_at({ time: dateTime.format(new Date(order.completedAt)) })}`
                     : null}
                 </p>
 
                 {order.note ? (
-                  <p className="mt-1 text-sm text-muted-foreground">Note : {order.note}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {m.history_note({ note: order.note })}
+                  </p>
                 ) : null}
               </div>
 
