@@ -8,11 +8,12 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { ChefHat, ClipboardList, History, LogOut, UtensilsCrossed, Wine } from 'lucide-react'
+import { ChefHat, ClipboardList, History, LogOut, Moon, Sun, UtensilsCrossed, Wine } from 'lucide-react'
 import { useEffect } from 'react'
 
 import { Button } from '#/components/ui/button'
 import { useMode, type Mode } from '#/lib/mode'
+import { useTheme } from '#/lib/theme'
 import { cn } from '#/lib/utils'
 import { logout } from '#/server/functions/auth'
 
@@ -38,6 +39,7 @@ export const Route = createFileRoute('/_app')({
 function AppLayout() {
   const { user } = Route.useRouteContext()
   const [mode, setMode] = useMode()
+  const [theme, setTheme] = useTheme()
   const navigate = useNavigate()
   const router = useRouter()
   const { pathname } = useLocation()
@@ -128,6 +130,24 @@ function AppLayout() {
 
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{user.name}</span>
+
+            {/*
+              L'icone montre ce vers quoi on bascule, pas l'etat courant : en
+              sombre on propose le soleil. L'etat, lui, se lit sur l'ecran.
+            */}
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={theme === 'sombre' ? 'Passer en theme clair' : 'Passer en theme sombre'}
+              onClick={() => setTheme(theme === 'sombre' ? 'clair' : 'sombre')}
+            >
+              {theme === 'sombre' ? (
+                <Sun className="size-4" aria-hidden />
+              ) : (
+                <Moon className="size-4" aria-hidden />
+              )}
+            </Button>
+
             <Button
               variant="ghost"
               size="icon"

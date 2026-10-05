@@ -190,8 +190,14 @@ function KitchenPage() {
                     ))}
                   </ul>
 
+                  {/*
+                    La note porte souvent une allergie : elle doit rester
+                    lisible dans les deux themes. Un seul ton d'ambre ne peut
+                    pas y suffire - clair sur fond sombre, il devient du jaune
+                    pale sur du jaune pale des que le theme passe au clair.
+                  */}
                   {order.note ? (
-                    <p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+                    <p className="rounded-md bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
                       {order.note}
                     </p>
                   ) : null}

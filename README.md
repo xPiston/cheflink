@@ -46,8 +46,8 @@ mode, and either can switch with one click.
   kitchen
 - ⏱️ **Waiting badge** — the card changes colour at 8 then 15 minutes
 - 🔐 **Session authentication** — PBKDF2 through WebCrypto, `httpOnly` cookie
-- 📱 **Built for a tablet** — large targets, dark theme, single column in
-  portrait
+- 📱 **Built for a tablet** — large targets, single column in portrait
+- 🌗 **Light or dark**, remembered per device, applied before the first paint
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
 - ✅ **10 tests on the business rules**, with no database and no browser
 
@@ -189,6 +189,11 @@ the start of service beats a chime you discover at 8pm has never worked.
   accounts.
 - **A hub failure never cancels the write.** An order that is saved but not
   broadcast is recoverable; an order that is lost is not.
+- **The theme belongs to the device**, like the bar/kitchen mode: the counter
+  station and the kitchen tablet aren't under the same light. Dark is the
+  default — a kitchen is often a dim corner — and an inline script in the
+  `<head>` applies the stored choice *before* the first paint, so a device set
+  to light never flashes the server-rendered dark page first.
 
 ## ✅ Tests
 
