@@ -65,6 +65,15 @@ mode, and either can switch with one click.
 
 </div>
 
+| | |
+| :--: | :--: |
+| <img src="docs/screenshots/theme-sombre.jpg" alt="The kitchen screen in dark theme"> | <img src="docs/screenshots/theme-clair.jpg" alt="The same kitchen screen in light theme, with the order note still legible"> |
+| **Dark** — the default | **Light** — one tap away |
+
+Same screen, one tap apart. The note carries the allergy, so it gets a tone of
+its own in each theme rather than one amber that only works against a dark
+background.
+
 ## 🚀 Getting started
 
 ```bash
