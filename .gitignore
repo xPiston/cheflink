@@ -12,10 +12,10 @@ dist-ssr
 __unconfig*
 todos.json
 
-# Base SQLite locale et sortie de build Nitro
+# Local SQLite database and Nitro build output
 data/
 .output/
 
-# Etat local de wrangler/miniflare
+# Local wrangler/miniflare state
 .wrangler/
 scripts/seed.generated.sql

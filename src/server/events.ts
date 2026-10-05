@@ -21,9 +21,9 @@ export type AppEvent =
 const HUB = 'salle'
 
 const DEGRADED =
-  "Le Durable Object temps reel n'est pas disponible. C'est attendu sous `npm run dev`, " +
-  "ou Nitro ne publie pas exports.cloudflare.ts : les ecrans ne se mettront a jour qu'au " +
-  'rafraichissement de securite. Utilisez `npm run preview` pour le runtime Cloudflare complet.'
+  'The real-time Durable Object is not available. That is expected under `npm run dev`, ' +
+  'where Nitro does not publish exports.cloudflare.ts: the screens will only catch up on ' +
+  'the safety refresh. Use `npm run preview` for the full Cloudflare runtime.'
 
 function hub() {
   const { REALTIME } = bindings()
@@ -50,7 +50,7 @@ export async function publish(event: AppEvent): Promise<void> {
       body: JSON.stringify(event),
     })
   } catch (error) {
-    console.warn(`[cheflink] evenement ${event.type} non diffuse. ${DEGRADED}`, error)
+    console.warn(`[cheflink] event ${event.type} was not broadcast. ${DEGRADED}`, error)
   }
 }
 
@@ -59,7 +59,7 @@ export async function connect(request: Request): Promise<Response> {
   try {
     return await hub().fetch(request)
   } catch (error) {
-    console.warn(`[cheflink] connexion temps reel refusee. ${DEGRADED}`, error)
+    console.warn(`[cheflink] real-time connection refused. ${DEGRADED}`, error)
 
     // 503 rather than 500: the client should understand it can retry, which
     // is what the reconnect loop in useAppEvents does.

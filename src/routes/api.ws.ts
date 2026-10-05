@@ -19,7 +19,7 @@ export const Route = createFileRoute('/api/ws')({
     handlers: {
       GET: async ({ request }) => {
         if (!(await currentUser())) {
-          return new Response('Connexion requise.', { status: 401 })
+          return new Response('Unauthorized', { status: 401 })
         }
 
         return connect(request)
