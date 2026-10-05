@@ -17,9 +17,13 @@
     {
       "binding": "DB",
       "database_name": "cheflink",
-      // Replace with the id returned by `wrangler d1 create cheflink`.
-      // Locally, Miniflare ignores this value and creates its own database.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // The id returned by `wrangler d1 create cheflink`.
+      //
+      // Note it is not only a remote pointer: Miniflare keys its local storage
+      // by database_id too, so changing this value starts from an empty local
+      // database and `npm run db:migrate && npm run db:seed` has to be run
+      // again.
+      "database_id": "411bd92e-e5cd-4ce9-beed-d25c851dda17",
       "migrations_dir": "drizzle"
     }
   ],
