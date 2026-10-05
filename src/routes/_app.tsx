@@ -18,12 +18,12 @@ import { cn } from '#/lib/utils'
 import { logout } from '#/server/functions/auth'
 
 /**
- * La coquille des pages authentifiees.
+ * The shell of the authenticated pages.
  *
- * Route "pathless" (le `_` du nom) : elle n'ajoute rien a l'URL, elle apporte
- * seulement l'en-tete commun et la garde d'acces. Tout ce qui est en dessous
- * est protege par construction - on ne peut pas oublier de proteger une page,
- * il suffit de la mettre au bon endroit.
+ * A pathless route (the `_` in the name): it adds nothing to the URL, it only
+ * brings the shared header and the access guard. Everything below it is
+ * protected by construction - you cannot forget to protect a page, you just
+ * have to put it in the right place.
  */
 export const Route = createFileRoute('/_app')({
   beforeLoad: ({ context }) => {
@@ -45,12 +45,11 @@ function AppLayout() {
   const { pathname } = useLocation()
 
   /**
-   * L'URL fait foi sur le mode affiche.
+   * The URL wins on which mode is shown.
    *
-   * Sans ca, ouvrir /cuisine depuis un favori ou un lien laisse l'en-tete sur
-   * "Bar" avec la navigation du bar, pendant que l'ecran montre la cuisine - on
-   * croit que le selecteur est casse. `/plats` ne touche a rien : il sert aux
-   * deux modes.
+   * Without this, opening /cuisine from a bookmark or a link leaves the header
+   * on "Bar" with the bar's navigation while the screen shows the kitchen - and
+   * the selector looks broken. `/plats` changes nothing: it serves both modes.
    */
   useEffect(() => {
     if (pathname.startsWith('/cuisine') && mode !== 'cuisine') {
@@ -70,9 +69,9 @@ function AppLayout() {
   })
 
   /**
-   * Changer de mode emmene sur l'ecran correspondant. Sans ca, basculer en
-   * "cuisine" depuis l'historique du bar ne ferait rien de visible, et on
-   * croirait que le bouton est casse.
+   * Switching mode takes you to the matching screen. Without that, flipping to
+   * "cuisine" from the bar's history would do nothing visible, and the button
+   * would look broken.
    */
   const switchMode = (next: Mode) => {
     setMode(next)
@@ -88,7 +87,7 @@ function AppLayout() {
             ChefLink
           </div>
 
-          {/* Le selecteur de mode : des cibles larges, la tablette se tape au doigt. */}
+          {/* The mode selector: wide targets, the tablet is tapped by finger. */}
           <div
             className="flex items-center rounded-lg border border-border/60 p-1"
             role="group"
@@ -132,8 +131,8 @@ function AppLayout() {
             <span className="hidden text-sm text-muted-foreground sm:inline">{user.name}</span>
 
             {/*
-              L'icone montre ce vers quoi on bascule, pas l'etat courant : en
-              sombre on propose le soleil. L'etat, lui, se lit sur l'ecran.
+              The icon shows what you switch TO, not the current state: in dark
+              we offer the sun. The current state is read off the screen itself.
             */}
             <Button
               variant="ghost"
@@ -210,11 +209,10 @@ function NavLink({
       className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       activeProps={{ className: 'bg-muted text-foreground' }}
       /**
-       * `exact` : par defaut, un lien est considere actif des que l'URL COMMENCE
-       * par sa cible. Sur /bar/historique, "Prise de commande" (/bar) s'allumait
-       * donc en meme temps que "Historique", et deux onglets paraissaient
-       * selectionnes. Chaque entree de cette barre designe une page precise,
-       * jamais une section : la correspondance doit etre exacte.
+       * `exact`: by default a link counts as active as soon as the URL STARTS
+       * WITH its target. On /bar/historique, "Prise de commande" (/bar) lit up
+       * alongside "Historique" and two tabs looked selected. Every entry in this
+       * bar points at one page, never a section: the match has to be exact.
        */
       activeOptions={{ exact: true }}
     >

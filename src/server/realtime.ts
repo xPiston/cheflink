@@ -3,28 +3,28 @@ import { DurableObject } from 'cloudflare:workers'
 import type { AppEvent } from './events'
 
 /**
- * Le hub temps reel : UN Durable Object pour tout le bar.
+ * The real-time hub: ONE Durable Object for the whole bar.
  *
- * POURQUOI un Durable Object. Un Worker est sans etat et replique : le bus en
- * memoire qui marchait sur un serveur unique ne peut pas fonctionner ici,
- * puisque l'ecran de la cuisine et le poste du bar peuvent tomber sur deux
- * isolats differents, voire deux continents. Un Durable Object est l'inverse :
- * exactement UNE instance pour un identifiant donne, partout dans le monde.
- * C'est le seul endroit de l'infrastructure Cloudflare ou "tout le monde
- * regarde le meme objet" a un sens, donc c'est la que vivent les connexions.
+ * WHY a Durable Object. A Worker is stateless and replicated: the in-memory bus
+ * that worked on a single server cannot work here, because the kitchen screen
+ * and the bar station may land on two different isolates, or two continents. A
+ * Durable Object is the opposite: exactly ONE instance for a given id, anywhere
+ * in the world. It is the only place in Cloudflare's infrastructure where
+ * "everyone is looking at the same object" means something, so that is where
+ * the connections live.
  *
- * POURQUOI l'hibernation. `acceptWebSocket` (plutot que `server.accept()`)
- * confie les sockets au runtime : l'objet peut etre evince de la memoire entre
- * deux commandes et les connexions RESTENT ouvertes. Une tablette branchee tout
- * le service ne facture donc pas une duree d'execution continue - elle ne coute
- * que lorsqu'une commande passe. Sans hibernation, un bar ouvert huit heures
- * tiendrait huit heures de Durable Object eveille.
+ * WHY hibernation. `acceptWebSocket` (rather than `server.accept()`) hands the
+ * sockets to the runtime: the object can be evicted from memory between orders
+ * while the connections STAY open. A tablet plugged in for a whole shift
+ * therefore does not bill continuous execution time - it only costs when an
+ * order goes through. Without hibernation, a bar open for eight hours would
+ * hold eight hours of an awake Durable Object.
  */
 export class Realtime extends DurableObject {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
 
-    // --- Publication : appelee par les server functions, pas par un navigateur.
+    // --- Publish: called by the server functions, never by a browser.
     if (url.pathname === '/publish') {
       const event = (await request.json()) as AppEvent
       this.#broadcast(event)
@@ -32,7 +32,7 @@ export class Realtime extends DurableObject {
       return new Response(null, { status: 204 })
     }
 
-    // --- Abonnement : l'ecran ouvre son WebSocket ici.
+    // --- Subscribe: this is where a screen opens its WebSocket.
     if (request.headers.get('upgrade') !== 'websocket') {
       return new Response('WebSocket attendu.', { status: 426 })
     }
@@ -46,9 +46,9 @@ export class Realtime extends DurableObject {
   }
 
   /**
-   * Les ecrans n'envoient rien d'utile : tout ce qu'ils font passe par des
-   * server functions. On repond quand meme au ping pour que le client puisse
-   * verifier que la connexion est vivante.
+   * Screens send nothing useful: everything they do goes through server
+   * functions. We still answer a ping so the client can check the connection is
+   * alive.
    */
   webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): void {
     if (message === 'ping') {
@@ -60,7 +60,7 @@ export class Realtime extends DurableObject {
     try {
       socket.close(1011, 'erreur')
     } catch {
-      // Deja ferme.
+      // Already closed.
     }
   }
 
@@ -71,8 +71,8 @@ export class Realtime extends DurableObject {
       try {
         socket.send(payload)
       } catch {
-        // Un socket mort ne doit pas empecher les autres d'etre servis ; le
-        // runtime le retirera de lui-meme.
+        // A dead socket must not stop the others from being served; the
+        // runtime will drop it on its own.
       }
     }
   }

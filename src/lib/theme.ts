@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 
 /**
- * Le theme clair ou sombre, propriete de l'APPAREIL.
+ * Light or dark theme, a property of the DEVICE.
  *
- * Meme logique que le mode bar/cuisine (voir src/lib/mode.ts) : la tablette de
- * la cuisine et le poste du comptoir ne sont pas dans la meme lumiere, et c'est
- * l'ecran qui doit s'en souvenir, pas le compte. D'ou `localStorage`.
+ * Same reasoning as the bar/kitchen mode (see src/lib/mode.ts): the kitchen
+ * tablet and the counter station are not under the same light, and it is the
+ * screen that should remember, not the account. Hence `localStorage`.
  *
- * Le defaut reste le sombre : la cuisine est souvent dans un coin peu eclaire,
- * et un fond blanc en plein service de soir est agressif. Qui prefere le clair
- * le dit une fois, et l'appareil s'en souvient.
+ * Dark stays the default: a kitchen is often a dim corner, and a white
+ * background mid-evening is harsh. Anyone who prefers light says so once, and
+ * the device remembers.
+ *
+ * The two values are French because they are what sits in `localStorage` on
+ * devices already in service; renaming them would reset everyone's choice.
  */
 export const THEMES = ['clair', 'sombre'] as const
 export type Theme = (typeof THEMES)[number]
@@ -21,19 +24,19 @@ export function isTheme(value: unknown): value is Theme {
   return value === 'clair' || value === 'sombre'
 }
 
-/** La couleur de la barre du navigateur sur mobile, par theme. */
+/** The mobile browser bar colour, per theme. */
 const THEME_COLOR: Record<Theme, string> = { sombre: '#0a0a0a', clair: '#ffffff' }
 
 /**
- * Applique le theme au document.
+ * Applies the theme to the document.
  *
- * Trois choses, pas une :
- *   - la classe `dark`, que lit la feuille de style ;
- *   - `colorScheme`, sans quoi les elements rendus par le navigateur lui-meme
- *     - barres de defilement, menus natifs, champs de date - resteraient clairs
- *     sur un fond sombre ;
- *   - la meta `theme-color`, qui teinte la barre du navigateur sur mobile et
- *     jurerait a rester figee sur une seule des deux valeurs.
+ * Three things, not one:
+ *   - the `dark` class, which the stylesheet reads;
+ *   - `colorScheme`, without which the elements the browser draws itself
+ *     - scrollbars, native menus, date pickers - would stay light on a dark
+ *     background;
+ *   - the `theme-color` meta, which tints the browser bar on mobile and would
+ *     clash if it stayed frozen on one of the two values.
  */
 export function applyTheme(theme: Theme): void {
   const root = document.documentElement
@@ -44,15 +47,15 @@ export function applyTheme(theme: Theme): void {
 }
 
 /**
- * Le script pose dans le <head>, avant tout rendu.
+ * The script placed in the <head>, before anything renders.
  *
- * Il DOIT etre synchrone et en ligne : si l'application attendait React pour
- * appliquer le theme, un appareil regle sur "clair" afficherait d'abord la page
- * sombre rendue par le serveur, puis basculerait - le fameux flash blanc, mais
- * a l'envers. Ici le document est corrige avant le premier affichage.
+ * It MUST be synchronous and inline. If the app waited for React to apply the
+ * theme, a device set to light would first show the dark page rendered by the
+ * server and then switch - the classic white flash, backwards. Here the
+ * document is corrected before the first paint.
  *
- * Il est ecrit a la main plutot que genere depuis `applyTheme` : ce code part
- * dans le HTML sous forme de chaine, il ne peut pas etre un import.
+ * It is written by hand rather than generated from `applyTheme`: this code
+ * ships inside the HTML as a string, so it cannot be an import.
  */
 export const THEME_INIT_SCRIPT = `(function(){try{
 var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
@@ -66,10 +69,10 @@ if(m){m.setAttribute('content',d?${JSON.stringify(THEME_COLOR.sombre)}:${JSON.st
 
 export function useTheme(): [Theme, (theme: Theme) => void] {
   /**
-   * On part du defaut cote serveur : `localStorage` n'y existe pas, et lire une
-   * autre valeur au premier rendu creerait un ecart entre le HTML du serveur et
-   * celui du client. Le script ci-dessus a deja mis le document d'accord ; cet
-   * effet ne fait que rattraper l'etat React.
+   * We start from the default on the server: `localStorage` does not exist
+   * there, and reading another value on the first render would create a gap
+   * between the server's HTML and the client's. The script above has already
+   * brought the document in line; this effect only catches React's state up.
    */
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
 
@@ -80,7 +83,7 @@ export function useTheme(): [Theme, (theme: Theme) => void] {
         setThemeState(stored)
       }
     } catch {
-      // Navigation privee ou stockage bloque : le defaut fait l'affaire.
+      // Private browsing or blocked storage: the default will do.
     }
   }, [])
 
@@ -90,7 +93,7 @@ export function useTheme(): [Theme, (theme: Theme) => void] {
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, next)
     } catch {
-      // Idem : ne pas perdre le changement pour autant.
+      // Same: don't lose the change over it.
     }
   }, [])
 

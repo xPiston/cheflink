@@ -4,22 +4,21 @@ import { bindings } from '#/server/cloudflare'
 import * as schema from './schema'
 
 /**
- * La base, pour la requete en cours.
+ * The database, for the current request.
  *
- * D1 est le SQLite manage de Cloudflare. Contrairement a un fichier local, il
- * n'y a RIEN a garder entre deux requetes : le binding est fourni par la
- * plateforme a chaque appel, et `drizzle()` n'est qu'une enveloppe sans etat
- * autour de lui. D'ou une fonction et non un singleton exporte - un singleton
- * capturerait le binding d'une requete pour le reutiliser dans une autre, ce
- * que le runtime interdit.
+ * D1 is Cloudflare's managed SQLite. Unlike a local file, there is NOTHING to
+ * keep between two requests: the platform hands over the binding on every call,
+ * and `drizzle()` is only a stateless wrapper around it. Hence a function
+ * rather than an exported singleton - a singleton would capture one request's
+ * binding and reuse it in another, which the runtime forbids.
  *
- * Deux consequences qui se voient ailleurs dans le code :
- *   - pas de transaction multi-requetes. D1 n'expose pas `BEGIN`/`COMMIT` ; les
- *     ecritures groupees passent par `batch()`, qui est atomique (voir
- *     src/server/functions/orders.ts) ;
- *   - les migrations ne tournent plus au demarrage mais par
- *     `npm run db:migrate` (`wrangler d1 migrations apply`) : un Worker n'a pas
- *     de "demarrage" ou poser ce genre de chose.
+ * Two consequences visible elsewhere in the code:
+ *   - no multi-statement transactions. D1 exposes no `BEGIN`/`COMMIT`; grouped
+ *     writes go through `batch()`, which is atomic (see
+ *     src/server/functions/orders.ts);
+ *   - migrations no longer run at startup but through `npm run db:migrate`
+ *     (`wrangler d1 migrations apply`): a Worker has no "startup" to hang that
+ *     kind of thing on.
  */
 export function getDb() {
   return drizzle(bindings().DB, { schema })

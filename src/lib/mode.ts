@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 
 /**
- * Le mode de l'appareil : bar ou cuisine.
+ * The device's mode: bar or kitchen.
  *
- * C'est une propriete de l'ECRAN, pas du compte - la tablette de la cuisine
- * reste en mode cuisine, le poste du comptoir en mode bar, et le meme compte
- * sert aux deux. D'ou le stockage dans `localStorage` plutot qu'en base.
+ * This belongs to the SCREEN, not to the account - the kitchen tablet stays in
+ * kitchen mode, the counter station in bar mode, and one account serves both.
+ * Hence `localStorage` rather than a column in the database.
  *
- * Le mode choisi decide juste de l'ecran d'accueil et de la navigation ; il
- * n'autorise rien de plus, puisqu'il suffit d'un clic pour en changer.
+ * The mode only decides the landing screen and the navigation; it grants
+ * nothing, since one click changes it.
  */
 export const MODES = ['bar', 'cuisine'] as const
 export type Mode = (typeof MODES)[number]
@@ -21,10 +21,10 @@ export function isMode(value: unknown): value is Mode {
 
 export function useMode(): [Mode, (mode: Mode) => void] {
   /**
-   * On demarre toujours sur 'bar', meme si localStorage dit autre chose : le
-   * serveur rend la page sans acces au stockage du navigateur, et lire la vraie
-   * valeur des le premier rendu produirait un ecart entre HTML serveur et HTML
-   * client. On la lit donc apres le montage.
+   * We always start on 'bar', even if localStorage says otherwise: the server
+   * renders the page with no access to browser storage, and reading the real
+   * value on the first render would produce a mismatch between the server's
+   * HTML and the client's. So we read it after mount.
    */
   const [mode, setModeState] = useState<Mode>('bar')
 
@@ -35,7 +35,7 @@ export function useMode(): [Mode, (mode: Mode) => void] {
         setModeState(stored)
       }
     } catch {
-      // Navigation privee ou stockage bloque : le mode par defaut fait l'affaire.
+      // Private browsing or blocked storage: the default mode will do.
     }
   }, [])
 
@@ -44,7 +44,7 @@ export function useMode(): [Mode, (mode: Mode) => void] {
     try {
       window.localStorage.setItem(STORAGE_KEY, next)
     } catch {
-      // Idem : ne pas perdre le changement de mode pour autant.
+      // Same: don't lose the mode change over it.
     }
   }, [])
 

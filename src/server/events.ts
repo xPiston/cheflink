@@ -1,12 +1,12 @@
 import { bindings } from './cloudflare'
 
 /**
- * Ce que le serveur pousse vers les ecrans ouverts.
+ * What the server pushes to the open screens.
  *
- * Les evenements ne transportent QUE des identifiants, pas les commandes
- * entieres : les ecrans refont la requete en recevant le signal. C'est un
- * aller-retour de plus, mais ca evite deux representations de la meme commande
- * qui finiraient par diverger, et ca garde la charge utile anodine.
+ * Events carry ONLY identifiers, never whole orders: screens refetch when the
+ * signal arrives. That is one extra round trip, but it avoids two
+ * representations of the same order drifting apart, and it keeps the payload
+ * harmless.
  */
 export type AppEvent =
   | { type: 'order.created'; orderId: string }
@@ -14,10 +14,9 @@ export type AppEvent =
   | { type: 'dishes.changed' }
 
 /**
- * Le bar n'a qu'une salle : un seul hub, donc un seul identifiant de Durable
- * Object. Le jour ou l'application servirait plusieurs etablissements, c'est
- * cette constante qui deviendrait l'identifiant de l'etablissement - et rien
- * d'autre ne bougerait.
+ * The bar has one room: one hub, so one Durable Object id. The day this serves
+ * several venues, this constant becomes the venue's id - and nothing else
+ * moves.
  */
 const HUB = 'salle'
 
@@ -33,17 +32,16 @@ function hub() {
 }
 
 /**
- * Diffuse un evenement a tous les ecrans connectes.
+ * Broadcasts an event to every connected screen.
  *
- * Une panne du hub ne doit PAS faire echouer l'ecriture qui vient d'avoir lieu :
- * une commande enregistree et non diffusee est recuperable - les ecrans se
- * resynchronisent a la reconnexion et au rafraichissement de securite - alors
- * qu'une commande perdue ne l'est pas. On journalise donc bruyamment et on
- * continue, plutot que d'annuler.
+ * A hub failure must NOT fail the write that just happened: an order that is
+ * saved but not broadcast is recoverable - screens resynchronise on reconnect
+ * and on the safety-net refetch - whereas a lost order is not. So we log
+ * loudly and carry on rather than roll back.
  *
- * L'URL passee au stub est arbitraire : un Durable Object ne repond pas sur le
- * reseau, c'est un appel direct, et seul le chemin sert d'aiguillage interne
- * (voir Realtime.fetch).
+ * The URL passed to the stub is arbitrary: a Durable Object does not answer on
+ * the network, this is a direct call, and only the path acts as internal
+ * routing (see Realtime.fetch).
  */
 export async function publish(event: AppEvent): Promise<void> {
   try {
@@ -56,15 +54,15 @@ export async function publish(event: AppEvent): Promise<void> {
   }
 }
 
-/** Transmet au hub la requete d'un ecran qui veut ouvrir son WebSocket. */
+/** Forwards to the hub the request of a screen opening its WebSocket. */
 export async function connect(request: Request): Promise<Response> {
   try {
     return await hub().fetch(request)
   } catch (error) {
     console.warn(`[cheflink] connexion temps reel refusee. ${DEGRADED}`, error)
 
-    // 503 et non 500 : le client doit comprendre qu'il peut reessayer, ce que
-    // fait la boucle de reconnexion de useAppEvents.
+    // 503 rather than 500: the client should understand it can retry, which
+    // is what the reconnect loop in useAppEvents does.
     return new Response(DEGRADED, { status: 503 })
   }
 }

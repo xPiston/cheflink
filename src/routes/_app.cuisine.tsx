@@ -32,17 +32,16 @@ function KitchenPage() {
     queryKey: ['orders', 'pending'],
     queryFn: () => listPendingOrders(),
     /**
-     * Filet de securite, pas le mecanisme principal : les commandes arrivent
-     * par SSE. Ce rafraichissement lent rattrape le cas ou le serveur aurait
-     * ete coupe assez longtemps pour que la reconnexion elle-meme echoue, sans
-     * que personne ne touche la tablette.
+     * A safety net, not the main mechanism: orders arrive over the real-time
+     * stream. This slow refetch covers the case where the server was down long
+     * enough for the reconnect itself to fail, with nobody touching the tablet.
      */
     refetchInterval: 60_000,
   })
 
   /**
-   * L'horloge des pastilles d'attente. Elle bat toutes les dix secondes et ne
-   * declenche aucune requete : seul l'affichage "il y a N min" change.
+   * The clock behind the waiting badges. It ticks every ten seconds and fires
+   * no request: only the "N min" display changes.
    */
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 10_000)
@@ -60,17 +59,17 @@ function KitchenPage() {
         void queryClient.invalidateQueries({ queryKey: ['orders'] })
       }
     },
-    // A chaque (re)connexion du flux : on repart de l'etat reel, sans quoi une
-    // commande envoyee pendant la coupure resterait invisible.
+    // On every (re)connection of the stream: start again from the real state,
+    // otherwise an order sent during the outage would stay invisible.
     onConnect: () => void queryClient.invalidateQueries({ queryKey: ['orders'] }),
   })
 
   const complete = useMutation({
     mutationFn: (orderId: string) => completeOrder({ data: { id: orderId } }),
     /**
-     * Mise a jour optimiste : la carte disparait au doigt, sans attendre le
-     * serveur. Sur une tablette en cuisine, un demi-seconde de latence donne
-     * l'impression que l'appui n'a pas ete pris, et on tape une deuxieme fois.
+     * Optimistic update: the card disappears under the finger, without waiting
+     * for the server. On a kitchen tablet, half a second of latency feels like
+     * the tap was not registered, and you tap a second time.
      */
     onMutate: async (orderId) => {
       await queryClient.cancelQueries({ queryKey: ['orders', 'pending'] })
@@ -102,10 +101,10 @@ function KitchenPage() {
         </h1>
 
         {/*
-          Tant que le son n'a pas ete debloque par un vrai appui, on le dit.
-          Les navigateurs refusent de jouer quoi que ce soit avant une
-          interaction : sans ce bouton, la tablette resterait muette toute la
-          soiree sans que personne ne comprenne pourquoi.
+          While the sound has not been unlocked by a real tap, we say so.
+          Browsers refuse to play anything before an interaction: without this
+          button the tablet would stay mute all evening with nobody
+          understanding why.
         */}
         {chime.enabled ? (
           <Badge variant="secondary" className="gap-1">
@@ -148,9 +147,9 @@ function KitchenPage() {
 
           return (
             /**
-             * Toute la carte est le bouton : en cuisine on tape avec le dos de
-             * la main ou un doigt gras, viser une petite zone est perdu
-             * d'avance.
+             * The whole card is the button: in a kitchen you tap with the back
+             * of your hand or a greasy finger, and aiming at a small target is
+             * a lost cause.
              */
             <button
               key={order.id}
@@ -191,10 +190,10 @@ function KitchenPage() {
                   </ul>
 
                   {/*
-                    La note porte souvent une allergie : elle doit rester
-                    lisible dans les deux themes. Un seul ton d'ambre ne peut
-                    pas y suffire - clair sur fond sombre, il devient du jaune
-                    pale sur du jaune pale des que le theme passe au clair.
+                    The note often carries an allergy: it has to stay legible in
+                    both themes. A single shade of amber cannot do that - light
+                    on a dark background, it turns into pale yellow on pale
+                    yellow as soon as the theme goes light.
                   */}
                   {order.note ? (
                     <p className="rounded-md bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">

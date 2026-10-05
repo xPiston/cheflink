@@ -3,12 +3,12 @@ import { getRequest } from '@tanstack/react-start/server'
 import type { Realtime } from './realtime'
 
 /**
- * Les bindings Cloudflare de la requete en cours.
+ * The Cloudflare bindings of the current request.
  *
- * Sur Workers, il n'y a pas de variable globale qui tienne la base : un binding
- * appartient a une requete, et Nitro l'attache a l'objet `Request`. C'est aussi
- * ce qui rend l'emulation locale (Miniflare, via `wrangler.jsonc`) identique a
- * la production - on lit le binding au meme endroit dans les deux cas.
+ * On Workers there is no global variable holding the database: a binding
+ * belongs to a request, and Nitro attaches it to the `Request` object. That is
+ * also what makes local emulation (Miniflare, through `wrangler.jsonc`)
+ * identical to production - the binding is read from the same place in both.
  */
 export type Bindings = {
   DB: D1Database

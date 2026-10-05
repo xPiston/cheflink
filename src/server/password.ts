@@ -1,18 +1,17 @@
 /**
- * Hachage des mots de passe : PBKDF2-SHA256, via WebCrypto.
+ * Password hashing: PBKDF2-SHA256, through WebCrypto.
  *
- * Pas scrypt, qui serait pourtant plus resistant au materiel specialise : le
- * runtime des Workers n'expose pas `node:crypto.scrypt`, et WebCrypto - qui, lui,
- * est garanti partout - ne connait pas scrypt non plus. PBKDF2 est le meilleur
- * algorithme disponible sur cette plateforme sans embarquer une implementation
- * tierce en WebAssembly.
+ * Not scrypt, which would resist dedicated hardware better: the Workers runtime
+ * does not expose `node:crypto.scrypt`, and WebCrypto - which is guaranteed
+ * everywhere - does not know scrypt either. PBKDF2 is the best algorithm
+ * available on this platform without shipping a third-party WebAssembly
+ * implementation.
  *
- * 210 000 iterations : la recommandation OWASP pour PBKDF2-HMAC-SHA256. Le
- * compte est stocke AVEC le hash, de sorte qu'augmenter ce nombre plus tard ne
- * casse pas les mots de passe existants - ils continueront d'etre verifies avec
- * le leur.
+ * 210,000 iterations: the OWASP recommendation for PBKDF2-HMAC-SHA256. The
+ * count is stored WITH the hash, so raising it later does not break existing
+ * passwords - they keep being verified with their own.
  *
- * Format : `pbkdf2$<iterations>$<sel en hex>$<hash en hex>`.
+ * Format: `pbkdf2$<iterations>$<salt in hex>$<hash in hex>`.
  */
 const ITERATIONS = 210_000
 const KEY_BITS = 256
@@ -66,12 +65,12 @@ export async function verifyPassword(password: string, stored: string): Promise<
 }
 
 /**
- * Comparaison a temps constant.
+ * Constant-time comparison.
  *
- * `===` sur deux chaines s'arrete au premier caractere different : le temps de
- * reponse laisserait fuir combien de caracteres du hash sont corrects. On
- * compare donc toujours la totalite. (`node:crypto.timingSafeEqual` n'existe pas
- * ici, d'ou cette version a la main sur des chaines de meme longueur.)
+ * `===` on two strings stops at the first differing character: the response
+ * time would leak how many characters of the hash are correct. So we always
+ * compare the whole thing. (`node:crypto.timingSafeEqual` does not exist here,
+ * hence this hand-written version over strings of equal length.)
  */
 function timingSafeEqual(left: string, right: string): boolean {
   if (left.length !== right.length) {

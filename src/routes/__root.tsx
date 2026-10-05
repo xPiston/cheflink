@@ -9,12 +9,12 @@ import { me } from '#/server/functions/auth'
 import appCss from '../styles.css?url'
 
 /**
- * La racine charge la session UNE fois, pour tout le monde.
+ * The root loads the session ONCE, for everyone.
  *
- * Elle la met dans le contexte du routeur : les pages protegees (sous `_app`)
- * n'ont plus qu'a la lire, et aucune n'a besoin de redemander qui est
- * connecte. Le controle d'acces lui-meme vit dans `_app.tsx`, pas ici, pour
- * que /connexion puisse s'afficher sans boucler sur elle-meme.
+ * It puts it in the router context: protected pages (under `_app`) only have to
+ * read it, and none of them needs to ask again who is signed in. The access
+ * check itself lives in `_app.tsx`, not here, so that /connexion can render
+ * without looping on itself.
  */
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -38,19 +38,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
   return (
     /**
-     * Le serveur rend toujours le theme par defaut : il n'a aucun moyen de
-     * connaitre le choix de l'appareil, qui vit dans `localStorage`. Le script
-     * ci-dessous corrige le document avant le premier affichage, et
-     * `suppressHydrationWarning` evite que React se plaigne de l'ecart qu'il
-     * vient lui-meme de creer sur l'element racine.
+     * The server always renders the default theme: it has no way of knowing the
+     * device's choice, which lives in `localStorage`. The script below corrects
+     * the document before the first paint, and `suppressHydrationWarning` stops
+     * React complaining about the gap it just created itself on the root
+     * element.
      */
     <html lang="fr" className={DEFAULT_THEME === 'sombre' ? 'dark' : ''} suppressHydrationWarning>
       <head>
         <HeadContent />
         {/*
-          Apres HeadContent, pour que la meta theme-color existe deja quand le
-          script la corrige - et toujours avant le premier affichage, puisqu'un
-          script en ligne dans le <head> bloque le rendu.
+          After HeadContent, so the theme-color meta already exists when the
+          script fixes it - and still before the first paint, since an inline
+          script in the <head> blocks rendering.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

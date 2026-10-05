@@ -9,9 +9,9 @@
       "@/*": ["./src/*"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    // Les types de la plateforme Workers (D1Database, DurableObject,
-    // WebSocketPair...) viennent de @cloudflare/workers-types. Ils cohabitent
-    // avec lib.dom parce que le meme tsconfig couvre le client et le serveur.
+    // The Workers platform types (D1Database, DurableObject, WebSocketPair...)
+    // come from @cloudflare/workers-types. They sit alongside lib.dom because
+    // the same tsconfig covers both the client and the server.
     "types": ["vite/client", "@cloudflare/workers-types"],
 
     /* Bundler mode */

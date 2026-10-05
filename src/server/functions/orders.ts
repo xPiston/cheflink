@@ -40,14 +40,14 @@ const createOrderInput = z.object({
 })
 
 /**
- * Envoie une commande en cuisine.
+ * Sends an order to the kitchen.
  *
- * Deux points qui comptent :
- *   - le nom du plat est lu en base ICI, jamais recu du navigateur. Le client
- *     n'envoie que des identifiants et des quantites, donc rien de ce qui
- *     s'affiche en cuisine ne vient de lui ;
- *   - tout se fait dans UNE transaction. Une commande a moitie ecrite
- *     s'afficherait en cuisine avec la moitie des plats.
+ * Two things that matter:
+ *   - the dish name is read from the database HERE, never taken from the
+ *     browser. The client only sends ids and quantities, so nothing displayed
+ *     in the kitchen comes from it;
+ *   - everything happens in ONE atomic write. A half-written order would show
+ *     up in the kitchen with half its dishes.
  */
 export const createOrder = createServerFn({ method: 'POST' })
   .validator(createOrderInput)
@@ -89,10 +89,10 @@ export const createOrder = createServerFn({ method: 'POST' })
     })
 
     /**
-     * `batch` et non une transaction : D1 n'expose pas BEGIN/COMMIT au client,
-     * mais garantit qu'un batch s'applique entierement ou pas du tout. C'est
-     * exactement ce qu'il faut ici - une commande a moitie ecrite s'afficherait
-     * en cuisine avec la moitie des plats.
+     * `batch` rather than a transaction: D1 exposes no BEGIN/COMMIT to the
+     * client, but guarantees a batch applies entirely or not at all. That is
+     * exactly what is needed here - a half-written order would show up in the
+     * kitchen with half its dishes.
      */
     await db.batch([
       db.insert(orders).values({
@@ -119,7 +119,7 @@ export const createOrder = createServerFn({ method: 'POST' })
     }
   })
 
-/** Les commandes en attente, dans l'ordre d'arrivee : c'est l'ecran cuisine. */
+/** Pending orders, oldest first: this is the kitchen screen. */
 export const listPendingOrders = createServerFn({ method: 'GET' }).handler(
   async (): Promise<OrderView[]> => {
     await requireUser()
@@ -133,7 +133,7 @@ const historyInput = z.object({
   limit: z.number().int().min(1).max(200).default(50),
 })
 
-/** L'historique du bar : les plus recentes d'abord, filtrables par statut. */
+/** The bar's history: most recent first, filterable by status. */
 export const listOrderHistory = createServerFn({ method: 'GET' })
   .validator(historyInput)
   .handler(async ({ data }): Promise<OrderView[]> => {
@@ -150,12 +150,12 @@ export class OrderNotFoundError extends Error {
 }
 
 /**
- * La cuisine tape sur une carte : la commande passe a "terminee".
+ * The kitchen taps a card: the order becomes "terminee".
  *
- * `and(id, status = en_attente)` dans le WHERE rend l'operation sure a
- * plusieurs : si deux tablettes tapent en meme temps, la seconde ne met rien a
- * jour et repart avec la commande deja terminee, sans erreur affichee. En
- * service, deux personnes qui touchent la meme carte n'est pas un incident.
+ * `and(id, status = en_attente)` in the WHERE makes this safe under
+ * concurrency: if two tablets tap at the same moment, the second updates
+ * nothing and returns the already-completed order with no error shown. During
+ * service, two people touching the same card is not an incident.
  */
 export const completeOrder = createServerFn({ method: 'POST' })
   .validator(z.object({ id: z.string().uuid() }))
@@ -202,8 +202,8 @@ async function loadOrders(
     return []
   }
 
-  // Une seule requete pour toutes les lignes, pas une par commande : l'ecran
-  // cuisine se rafraichit a chaque evenement, et un N+1 s'y verrait vite.
+  // One query for all the lines, not one per order: the kitchen screen
+  // refetches on every event, and an N+1 would show there quickly.
   const items = await db
     .select()
     .from(orderItems)

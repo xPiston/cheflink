@@ -12,9 +12,9 @@ const config = defineConfig({
   plugins: [
     devtools(),
     nitro({
-      // Cible de deploiement : Cloudflare Workers. Nitro lit wrangler.jsonc
-      // pour les bindings et les emule en local avec Miniflare, de sorte que
-      // `npm run dev` tourne contre une vraie D1 et un vrai Durable Object.
+      // Deployment target: Cloudflare Workers. Nitro reads wrangler.jsonc for
+      // the bindings and emulates them locally with Miniflare, so that
+      // `npm run dev` runs against a real D1 and a real Durable Object.
       preset: 'cloudflare_module',
       rollupConfig: { external: [/^@sentry\//] },
     }),

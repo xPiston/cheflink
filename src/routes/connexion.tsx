@@ -11,7 +11,7 @@ import { login } from '#/server/functions/auth'
 
 export const Route = createFileRoute('/connexion')({
   beforeLoad: ({ context }) => {
-    // Deja connecte : inutile de revoir ce formulaire.
+    // Already signed in: no reason to see this form again.
     if (context.user) {
       throw redirect({ to: '/' })
     }
@@ -28,7 +28,7 @@ function LoginPage() {
   const signIn = useMutation({
     mutationFn: () => login({ data: { email, password } }),
     onSuccess: async () => {
-      // Recharge le contexte du routeur pour qu'il voie la session fraiche.
+      // Reload the router context so it sees the fresh session.
       await router.invalidate()
       await navigate({ to: '/' })
     },

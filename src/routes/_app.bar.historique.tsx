@@ -39,8 +39,8 @@ function HistoryPage() {
       }),
   })
 
-  // L'historique se met a jour quand la cuisine valide : le bar voit passer la
-  // commande en "terminee" sans rien faire.
+  // The history updates when the kitchen completes an order: the bar sees it
+  // turn to "terminee" without doing anything.
   useAppEvents({
     onEvent: (event) => {
       if (event.type === 'order.created' || event.type === 'order.completed') {

@@ -12,11 +12,11 @@ import {
 } from './orders'
 
 /**
- * Les regles d'une commande, testees sans base, sans serveur et sans navigateur.
+ * The rules of an order, tested with no database, no server and no browser.
  *
- * C'est tout l'interet d'avoir sorti ces fonctions des composants et des
- * requetes : la machine a etats et le regroupement des lignes sont verifiables
- * en quelques millisecondes.
+ * That is the whole point of having pulled these functions out of the
+ * components and the queries: the state machine and the line merging are
+ * verifiable in milliseconds.
  */
 
 describe('machine a etats', () => {
@@ -68,9 +68,9 @@ describe('regroupement des lignes', () => {
   })
 
   /**
-   * Le regroupement peut faire franchir la limite a un plat qui, ligne par
-   * ligne, etait valide. Sans cette verification apres fusion, cinquante
-   * clics sur "+1" passeraient a 50, puis cent a 100.
+   * Merging can push a dish past the limit even though each line was valid on
+   * its own. Without this check after the merge, fifty taps on "+1" would get
+   * through at 50, then a hundred at 100.
    */
   it('refuse aussi quand c est le CUMUL qui depasse', () => {
     expect(() =>
@@ -90,8 +90,8 @@ describe('attente en cuisine', () => {
   })
 
   it('ne descend jamais sous zero', () => {
-    // Les horloges de deux appareils ne sont jamais parfaitement d'accord :
-    // une commande "creee dans le futur" ne doit pas afficher -1 min.
+    // Two devices' clocks never agree perfectly: an order "created in the
+    // future" must not display -1 min.
     expect(waitingMinutes(base, new Date('2026-10-01T19:59:00Z'))).toBe(0)
   })
 

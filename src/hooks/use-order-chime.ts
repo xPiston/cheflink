@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
- * La sonnerie de la cuisine, synthetisee avec l'API Web Audio.
+ * The kitchen chime, synthesised with the Web Audio API.
  *
- * Pas de fichier audio : deux notes generees pesent zero octet, ne posent
- * aucune question de licence, et sonnent identiquement sur toutes les
- * tablettes.
+ * No audio file: two generated notes weigh zero bytes, raise no licensing
+ * question, and sound identical on every tablet.
  *
- * LE POINT IMPORTANT : les navigateurs interdisent de jouer un son avant que
- * l'utilisateur ait interagi avec la page. Une tablette posee en cuisine qu'on
- * ouvre et qu'on ne touche plus ne sonnerait donc JAMAIS, en silence, sans que
- * rien ne le signale. D'ou `enabled` : tant que le contexte audio n'a pas ete
- * debloque par un vrai clic, l'ecran affiche un bouton pour le faire. Mieux
- * vaut un bouton a taper en debut de service qu'une sonnerie dont on decouvre
- * a 20 h qu'elle ne marche pas.
+ * THE IMPORTANT PART: browsers refuse to play a sound before the user has
+ * interacted with the page. A tablet set down in the kitchen, opened in the
+ * morning and never touched again, would therefore NEVER ring - silently, with
+ * nothing to signal it. Hence `enabled`: until a real tap has unlocked the
+ * audio context, the screen shows a button to do it. A button to tap at the
+ * start of service beats a chime you discover at 8pm has never worked.
  */
 export function useOrderChime() {
   const contextRef = useRef<AudioContext | null>(null)
@@ -46,8 +44,8 @@ export function useOrderChime() {
       return
     }
 
-    // Deux notes montantes, courtes : audible dans le bruit d'une cuisine sans
-    // etre agressif quand il en arrive cinq a la suite.
+    // Two short rising notes: audible over kitchen noise without grating when
+    // five arrive in a row.
     const start = context.currentTime
     for (const [index, frequency] of [880, 1174.66].entries()) {
       const oscillator = context.createOscillator()
@@ -57,8 +55,8 @@ export function useOrderChime() {
       oscillator.frequency.value = frequency
 
       const at = start + index * 0.18
-      // Une enveloppe plutot qu'un gain constant : un son qui demarre et
-      // s'arrete net produit un "clic" desagreable.
+      // An envelope rather than a constant gain: a sound that starts and
+      // stops abruptly produces an unpleasant click.
       gain.gain.setValueAtTime(0.0001, at)
       gain.gain.exponentialRampToValueAtTime(0.35, at + 0.02)
       gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.16)

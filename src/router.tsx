@@ -8,10 +8,10 @@ export function getRouter() {
     defaultOptions: {
       queries: {
         /**
-         * Les ecrans sont rafraichis par le flux SSE, pas par un minuteur. On
-         * coupe donc les recuperations automatiques de TanStack Query : elles
-         * feraient double emploi et, sur une tablette laissee ouverte toute la
-         * soiree, des requetes pour rien.
+         * Screens are refreshed by the real-time stream, not by a timer. So
+         * TanStack Query's automatic refetching is turned off: it would
+         * duplicate that work and, on a tablet left open all evening, mean
+         * requests for nothing.
          */
         refetchOnWindowFocus: false,
         staleTime: 30_000,
@@ -22,8 +22,8 @@ export function getRouter() {
 
   return createTanStackRouter({
     routeTree,
-    // `user` est rempli par le `beforeLoad` de la racine ; il est declare ici
-    // pour que le contexte soit complet des la creation du routeur.
+    // `user` is filled in by the root's `beforeLoad`; it is declared here so
+    // the context is complete from the moment the router is created.
     context: { queryClient, user: null },
     scrollRestoration: true,
     defaultPreload: 'intent',

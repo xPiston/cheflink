@@ -2,12 +2,12 @@ import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
- * Le schema de l'application.
+ * The application schema.
  *
- * Quatre tables metier, une pour l'authentification. Les identifiants sont des
- * UUID et non des entiers auto-incrementes : une commande est creee cote
- * serveur puis diffusee en SSE a toutes les tablettes, et un identifiant
- * opaque evite de laisser deviner le volume d'activite du bar.
+ * Four business tables, one for authentication. Identifiers are UUIDs rather
+ * than auto-incrementing integers: an order is created server-side then
+ * broadcast to every tablet, and an opaque id avoids leaking how busy the bar
+ * is.
  */
 
 export const users = sqliteTable('users', {
@@ -37,7 +37,7 @@ export const dishes = sqliteTable('dishes', {
   name: text('name').notNull(),
   description: text('description'),
   category: text('category').notNull(),
-  /** Un plat retire de la carte du jour reste commandable demain. */
+  /** A dish pulled from today's menu can be ordered again tomorrow. */
   available: integer('available', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
@@ -48,10 +48,10 @@ export const orders = sqliteTable(
   'orders',
   {
     id: text('id').primaryKey(),
-    /** "Table 4", "Comptoir"... libre, c'est ce que crie le serveur. */
+    /** "Table 4", "Comptoir"... free text: it is what the server shouts. */
     tableLabel: text('table_label').notNull(),
     note: text('note'),
-    /** 'en_attente' | 'terminee' - voir src/lib/orders.ts. */
+    /** 'en_attente' | 'terminee' - see src/lib/orders.ts. */
     status: text('status').notNull(),
     createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
@@ -73,14 +73,14 @@ export const orderItems = sqliteTable(
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
     /**
-     * Le plat d'origine, pour les statistiques. Il peut disparaitre : la
-     * reference passe alors a null, et la commande reste lisible.
+     * The dish it came from, for statistics. It may disappear: the reference
+     * then becomes null and the order stays readable.
      */
     dishId: text('dish_id').references(() => dishes.id, { onDelete: 'set null' }),
     /**
-     * Le nom est COPIE au moment de la commande, pas lu par jointure. Sans ca,
-     * renommer un plat reecrirait l'historique - et le supprimer effacerait ce
-     * qui a ete servi.
+     * The name is COPIED when the order is placed, not read through a join.
+     * Without that, renaming a dish would rewrite history - and deleting one
+     * would erase what was actually served.
      */
     dishName: text('dish_name').notNull(),
     quantity: integer('quantity').notNull(),

@@ -5,10 +5,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { useMode } from '#/lib/mode'
 
 /**
- * L'accueil n'affiche rien : il envoie sur l'ecran du mode de l'appareil.
+ * The home route shows nothing: it sends you to the screen for the device's
+ * mode.
  *
- * La redirection se fait apres le montage et non dans `beforeLoad`, parce que
- * le mode vit dans `localStorage` : le serveur ne peut pas le connaitre.
+ * The redirect happens after mount rather than in `beforeLoad`, because the
+ * mode lives in `localStorage`: the server cannot know it.
  */
 export const Route = createFileRoute('/_app/')({
   component: HomeRedirect,

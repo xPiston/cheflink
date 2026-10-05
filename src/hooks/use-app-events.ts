@@ -3,40 +3,39 @@ import { useEffect, useRef } from 'react'
 import type { AppEvent } from '#/server/events'
 
 type Options = {
-  /** Appele a chaque evenement pousse par le serveur. */
+  /** Called on every event pushed by the server. */
   onEvent: (event: AppEvent) => void
   /**
-   * Appele a CHAQUE ouverture de la connexion, y compris les reconnexions.
+   * Called on EVERY open of the connection, reconnections included.
    *
-   * C'est la piece qui empeche un ecran de rester fige. Un evenement n'est pas
-   * rejoue : s'il part pendant que la tablette hydrate, pendant une coupure de
-   * wifi ou pendant un redeploiement, il est perdu pour de bon - et l'ecran
-   * afficherait "rien a preparer" avec une commande en attente en base.
-   * Verifie en situation : une commande envoyee avant que l'ecran cuisine ne
-   * soit connecte n'apparaissait jamais.
+   * This is the piece that keeps a screen from going stale. An event is never
+   * replayed: if it fires while the tablet is hydrating, during a wifi drop or
+   * during a redeploy, it is lost for good - and the screen would show
+   * "nothing to prepare" with an order sitting in the database. Seen for real:
+   * an order sent before the kitchen screen had connected never appeared.
    *
-   * On traite donc "la connexion vient de s'ouvrir" comme un point de
-   * synchronisation : on recharge, et l'ecran repart de l'etat reel.
+   * So "the connection just opened" is treated as a synchronisation point: we
+   * refetch, and the screen starts again from the real state.
    */
   onConnect?: () => void
 }
 
-/** Un demi-seconde, puis le double a chaque echec, plafonne a dix secondes. */
+/** Half a second, then double on each failure, capped at ten seconds. */
 const FIRST_RETRY_MS = 500
 const MAX_RETRY_MS = 10_000
 
 /**
- * Abonne l'ecran au flux temps reel du serveur (WebSocket).
+ * Subscribes the screen to the server's real-time stream (WebSocket).
  *
- * POURQUOI WebSocket et pas SSE. Sur Cloudflare, les connexions longues sont
- * tenues par un Durable Object (voir src/server/realtime.ts), et le WebSocket
- * est le seul transport que cette plateforme sait maintenir et diffuser a
- * plusieurs ecrans a la fois.
+ * WHY WebSocket rather than SSE. On Cloudflare, long-lived connections are held
+ * by a Durable Object (see src/server/realtime.ts), and the WebSocket is the
+ * only transport this platform can keep alive and fan out to several screens at
+ * once.
  *
- * Contrepartie assumee : `EventSource` reconnectait tout seul, `WebSocket` non.
- * La boucle ci-dessous fait ce travail, avec un recul exponentiel pour ne pas
- * marteler le serveur quand c'est lui qui est tombe. C'est peu de code, mais
- * c'est du code qui doit marcher : le wifi d'un bar tombe.
+ * The trade-off we accepted: `EventSource` reconnected on its own, `WebSocket`
+ * does not. The loop below does that work, with exponential backoff so it does
+ * not hammer a server that is the thing which went down. It is little code, but
+ * it is code that has to work: the wifi in a bar does drop.
  */
 export function useAppEvents({ onEvent, onConnect }: Options): void {
   const handlers = useRef({ onEvent, onConnect })
@@ -69,12 +68,12 @@ export function useAppEvents({ onEvent, onConnect }: Options): void {
         try {
           handlers.current.onEvent(JSON.parse(message.data as string) as AppEvent)
         } catch {
-          // Un message illisible ne doit pas tuer la connexion.
+          // An unreadable message must not kill the connection.
         }
       })
 
-      // `close` suffit : un `error` est toujours suivi d'un `close`, et
-      // reprogrammer depuis les deux ouvrirait deux connexions.
+      // `close` is enough: an `error` is always followed by a `close`, and
+      // rescheduling from both would open two connections.
       socket.addEventListener('close', () => {
         if (closed) {
           return

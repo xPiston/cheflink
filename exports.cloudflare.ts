@@ -1,11 +1,11 @@
 /**
- * Exports supplementaires du Worker.
+ * Extra Worker exports.
  *
- * Nitro detecte ce fichier et ajoute ses exports a l'entree du Worker. C'est
- * ce qui permet a Cloudflare de trouver la classe `Realtime` nommee dans
- * `wrangler.jsonc` : un binding Durable Object pointe vers une classe exportee
- * par le Worker, et le handler genere par Nitro n'exporte que lui-meme.
+ * Nitro picks this file up and adds its exports to the Worker entrypoint. That
+ * is what lets Cloudflare find the `Realtime` class named in `wrangler.jsonc`:
+ * a Durable Object binding points at a class exported by the Worker, and the
+ * handler Nitro generates only exports itself.
  *
- * Pas d'export par defaut ici : il entrerait en conflit avec celui de Nitro.
+ * No default export here: it would collide with Nitro's.
  */
 export { Realtime } from './src/server/realtime'

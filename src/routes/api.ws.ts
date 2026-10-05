@@ -4,15 +4,15 @@ import { currentUser } from '#/server/auth'
 import { connect } from '#/server/events'
 
 /**
- * Le point d'entree du flux temps reel.
+ * The entry point of the real-time stream.
  *
- * Ce handler ne fait presque rien, et c'est voulu : il verifie la session, puis
- * passe la requete d'upgrade au Durable Object, qui garde la connexion. Le
- * Worker, lui, ne tient rien - il n'en est pas capable.
+ * This handler does almost nothing, on purpose: it checks the session, then
+ * hands the upgrade request to the Durable Object, which holds the connection.
+ * The Worker holds nothing - it is not able to.
  *
- * L'authentification est faite ICI plutot que dans le Durable Object : le
- * cookie de session et la base vivent cote Worker, et le hub n'a aucune raison
- * de savoir ce qu'est un utilisateur.
+ * Authentication happens HERE rather than in the Durable Object: the session
+ * cookie and the database live on the Worker side, and the hub has no reason to
+ * know what a user is.
  */
 export const Route = createFileRoute('/api/ws')({
   server: {

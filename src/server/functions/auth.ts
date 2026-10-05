@@ -34,9 +34,9 @@ export const login = createServerFn({ method: 'POST' })
       .limit(1)
 
     /**
-     * Un e-mail inconnu et un mot de passe faux donnent la MEME erreur. Les
-     * distinguer transformerait le formulaire en outil pour savoir qui a un
-     * compte ici.
+     * An unknown e-mail and a wrong password give the SAME error. Telling them
+     * apart would turn this form into a tool for finding out who has an
+     * account here.
      */
     if (!user || !(await verifyPassword(data.password, user.passwordHash))) {
       throw new InvalidCredentialsError()
@@ -54,8 +54,8 @@ export const logout = createServerFn({ method: 'POST' }).handler(async () => {
 })
 
 /**
- * Qui est connecte. Appelee par la route racine avant tout rendu, c'est elle
- * qui decide si on voit l'application ou l'ecran de connexion.
+ * Who is signed in. Called by the root route before anything renders, it is
+ * what decides whether you see the app or the login screen.
  */
 export const me = createServerFn({ method: 'GET' }).handler(
   async (): Promise<SessionUser | null> => currentUser()

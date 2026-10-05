@@ -3,23 +3,23 @@ import { writeFileSync } from 'node:fs'
 import { hashPassword } from '../src/server/password.ts'
 
 /**
- * Produit le SQL des donnees de demonstration.
+ * Produces the SQL for the demo data.
  *
- * Sur Cloudflare, un Worker n'a pas de "demarrage" ou poser un seed : il
- * repond a des requetes, point. Les donnees initiales sont donc posees depuis
- * la ligne de commande, comme les migrations - `npm run db:seed`.
+ * On Cloudflare a Worker has no "startup" to hang a seed on: it answers
+ * requests, full stop. Initial data is therefore laid down from the command
+ * line, like the migrations - `npm run db:seed`.
  *
- * Ce script ne parle pas a la base : il ECRIT du SQL, que wrangler applique
- * ensuite (en local ou en production selon `--remote`). Il peut donc tourner
- * sous Node sans aucun binding, tout en produisant un hash de mot de passe au
- * format exact que l'application sait verifier - c'est pour ca qu'il importe
- * `hashPassword` au lieu de le reimplementer.
+ * This script never talks to the database: it WRITES SQL, which wrangler then
+ * applies (locally or in production depending on `--remote`). So it can run
+ * under Node with no bindings at all, while producing a password hash in the
+ * exact format the app knows how to verify - which is why it imports
+ * `hashPassword` instead of reimplementing it.
  *
- * Le fichier produit est volontairement HORS de `drizzle/` : wrangler traite
- * tout .sql de ce dossier comme une migration, et le seed y serait rejoue a
- * chaque `migrations apply`, y compris en production.
+ * The file it produces deliberately lives OUTSIDE `drizzle/`: wrangler treats
+ * every .sql in that folder as a migration, and the seed would be replayed on
+ * each `migrations apply`, production included.
  *
- * Tout est en `insert or ignore` : relancer le seed ne duplique rien.
+ * Everything is `insert or ignore`: re-running the seed duplicates nothing.
  */
 const EMAIL = process.env.SEED_EMAIL ?? 'bar@exemple.fr'
 const PASSWORD = process.env.SEED_PASSWORD ?? 'motdepasse'

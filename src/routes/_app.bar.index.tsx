@@ -28,8 +28,8 @@ function TakeOrderPage() {
 
   const dishes = useQuery({ queryKey: ['dishes'], queryFn: () => listDishes() })
 
-  // La carte peut changer pendant le service : si quelqu'un retire un plat
-  // depuis /plats, le bar le voit disparaitre sans recharger la page.
+  // The menu can change mid-service: if someone pulls a dish from /plats, the
+  // bar sees it disappear without reloading the page.
   useAppEvents({
     onEvent: (event) => {
       if (event.type === 'dishes.changed') {
@@ -158,7 +158,7 @@ function TakeOrderPage() {
         ))}
       </section>
 
-      {/* Le panier reste visible pendant qu'on fait defiler la carte. */}
+      {/* The basket stays visible while you scroll the menu. */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <Card>
           <CardHeader>

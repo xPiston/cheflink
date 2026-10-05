@@ -87,11 +87,11 @@ export const updateDish = createServerFn({ method: 'POST' })
   })
 
 /**
- * Supprime le plat de la carte.
+ * Removes the dish from the menu.
  *
- * Les commandes passees n'en souffrent pas : chaque ligne a copie le nom du
- * plat au moment de l'envoi, et la reference passe simplement a null (voir le
- * schema). On peut donc retirer un plat sans amputer l'historique.
+ * Past orders are unaffected: every line copied the dish name when it was sent,
+ * and the reference simply becomes null (see the schema). A dish can therefore
+ * be pulled without cutting into history.
  */
 export const deleteDish = createServerFn({ method: 'POST' })
   .validator(z.object({ id: z.string().uuid() }))

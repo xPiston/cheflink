@@ -45,11 +45,10 @@ export async function destroyCurrentSession(): Promise<void> {
 }
 
 /**
- * L'utilisateur de la requete en cours, ou null.
+ * The user of the current request, or null.
  *
- * Les sessions expirees sont supprimees au passage plutot que par une tache
- * planifiee : la table reste petite sans qu'il y ait un rouage de plus a
- * surveiller.
+ * Expired sessions are deleted along the way rather than by a scheduled job:
+ * the table stays small without one more moving part to watch.
  */
 export async function currentUser(): Promise<SessionUser | null> {
   const token = getCookie(SESSION_COOKIE)
@@ -84,7 +83,7 @@ export class UnauthenticatedError extends Error {
   }
 }
 
-/** A appeler en tete de chaque server function qui touche aux donnees. */
+/** Call this at the top of every server function that touches data. */
 export async function requireUser(): Promise<SessionUser> {
   const user = await currentUser()
   if (!user) {

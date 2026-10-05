@@ -1,19 +1,19 @@
 /**
- * Les regles d'une commande, en TypeScript pur.
+ * The rules of an order, in plain TypeScript.
  *
- * Ce fichier n'importe ni la base, ni React, ni le serveur : il est importable
- * des deux cotes et testable sans rien demarrer (voir src/lib/orders.test.ts).
- * C'est le seul endroit qui decide ce qu'une commande a le droit de devenir.
+ * This file imports neither the database, nor React, nor the server: it runs on
+ * both sides and is testable without starting anything (see
+ * src/lib/orders.test.ts). It is the only place that decides what an order is
+ * allowed to become.
  *
- * Il n'y a PAS de prix ici, ni nulle part ailleurs : l'application sert a
- * transmettre des commandes a la cuisine, pas a encaisser. L'addition se fait
- * en caisse.
+ * There is NO price here, nor anywhere else: the app carries orders to the
+ * kitchen, it does not take payment. The bill is settled at the till.
  */
 
 export const ORDER_STATUS = {
-  /** Envoyee par le bar, affichee en cuisine, pas encore servie. */
+  /** Sent by the bar, showing in the kitchen, not served yet. */
   Pending: 'en_attente',
-  /** La cuisine a tape sur la carte : c'est pret. */
+  /** The kitchen tapped the card: it is ready. */
   Done: 'terminee',
 } as const
 
@@ -29,9 +29,9 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
 }
 
 /**
- * Terminer une commande deja terminee n'est pas une erreur a afficher : en
- * service, deux personnes tapent sur la meme carte a une seconde d'intervalle.
- * On distingue donc "refus" (etat impossible) de "deja fait" (sans effet).
+ * Completing an already completed order is not an error worth showing: during
+ * service two people tap the same card a second apart. So "refused" (an
+ * impossible state) is kept distinct from "already done" (a no-op).
  */
 export function isOrderStatus(value: string): value is OrderStatus {
   return value === ORDER_STATUS.Pending || value === ORDER_STATUS.Done
@@ -64,10 +64,10 @@ export class UnavailableDishError extends Error {
 }
 
 /**
- * Regroupe les lignes d'une meme commande.
+ * Merges the lines of a single order.
  *
- * Deux clics sur le meme plat font une ligne a 2, pas deux lignes a 1 : la
- * cuisine lit une carte, pas une liste de courses.
+ * Two taps on the same dish make one line of 2, not two lines of 1: the kitchen
+ * reads a card, not a shopping list.
  */
 export function mergeLines(lines: ReadonlyArray<OrderLineInput>): Array<OrderLineInput> {
   const merged = new Map<string, number>()
@@ -95,14 +95,14 @@ export function mergeLines(lines: ReadonlyArray<OrderLineInput>): Array<OrderLin
   return result
 }
 
-/** Depuis combien de temps la commande attend, pour la pastille de la cuisine. */
+/** How long the order has been waiting, for the badge on the kitchen card. */
 export function waitingMinutes(createdAt: Date, now: Date): number {
   return Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / 60_000))
 }
 
 /**
- * L'urgence d'une carte en cuisine. Les seuils sont ici et pas dans le JSX :
- * c'est une regle de service, pas une couleur.
+ * How urgent a kitchen card is. The thresholds live here rather than in the
+ * JSX: this is a rule of service, not a colour.
  */
 export function urgency(waitedMinutes: number): 'calme' | 'presse' | 'tres_presse' {
   if (waitedMinutes >= 15) return 'tres_presse'
