@@ -31,9 +31,10 @@ Two modes on the same account — and the mode belongs to the **device**, not th
 person. The counter station stays in bar mode, the kitchen tablet in kitchen
 mode, and either can switch with one click.
 
-> The interface comes in **French and English**, French by default because that
-> is the language of the team using it. Everything below — and every comment in
-> the code — explains the decisions, not just the mechanics.
+> The interface comes in **French, English, Spanish and Portuguese**, French by
+> default because that is the language of the team using it. Everything below —
+> and every comment in the code — explains the decisions, not just the
+> mechanics.
 
 ## ✨ What's inside
 
@@ -50,10 +51,11 @@ mode, and either can switch with one click.
 - 🔐 **Session authentication** — PBKDF2 through WebCrypto, `httpOnly` cookie
 - 📱 **Built for a tablet** — large targets, single column in portrait
 - 🌗 **Light or dark**, remembered per device, applied before the first paint
-- 🌍 **French and English**, chosen per device and resolved **server-side**, so
-  the first HTML is already in the right language
+- 🌍 **Four languages** — French, English, Spanish and Portuguese, chosen per
+  device and resolved **server-side**, so the first HTML is already in the
+  right language
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
-- ✅ **14 tests** on the business rules and the message catalogues, with no
+- ✅ **18 tests** on the business rules and the message catalogues, with no
   database and no browser
 
 | | |
@@ -79,24 +81,25 @@ Same screen, one tap apart. The note carries the allergy, so it gets a tone of
 its own in each theme rather than one amber that only works against a dark
 background.
 
-## 🌍 Two languages
+## 🌍 Four languages
 
-French and English, through [Paraglide JS](https://paraglidejs.com) — the
-library TanStack Router's own i18n guide builds its examples on. TanStack ships
-no i18n package of its own.
+French, English, Spanish and Portuguese, through
+[Paraglide JS](https://paraglidejs.com) — the library TanStack Router's own
+i18n guide builds its examples on. TanStack ships no i18n package of its own.
 
-The copy lives in `messages/fr.json` and `messages/en.json` and is **compiled**
-into `src/paraglide`: each message becomes a function, so a page only ships the
-messages it uses, and a typo in a message name is a type error rather than a
-blank on a screen.
+The copy lives in one file per language — `messages/fr.json`, `en.json`,
+`es.json` and `pt.json` — and is **compiled** into `src/paraglide`: each
+message becomes a function, so a page only ships the messages it uses, and a
+typo in a message name is a type error rather than a blank on a screen.
 
 | | |
 | :--: | :--: |
 | <img src="docs/screenshots/langue-en.jpg" alt="The kitchen screen in English: In the kitchen, 3 orders, Enable sound, Tap to mark as ready"> | <img src="docs/screenshots/langue-fr.jpg" alt="The same kitchen screen in French: En cuisine, 3 commandes, Activer le son, Appuyer pour marquer pret"> |
 | **English** | **French** |
 
-The same screen, one button apart - the `EN`/`FR` in the header. The order note
-is not translated and should not be: it is what the server typed.
+The same screen, one choice apart — the language menu in the header, which
+shows the current language and lists every other one in its own words. The
+order note is not translated and should not be: it is what the server typed.
 
 Three decisions worth the words:
 
@@ -127,7 +130,8 @@ on top of them are translated.
 Plurals go through CLDR rather than a parenthesised `(s)`: French counts 0 as
 singular ("0 commande"), English does not ("0 orders"). Dates follow suit —
 English here means British English, because 05/10 should not mean October in one
-language and May in the other on the same screen.
+language and May in the other on the same screen, and Spanish and Portuguese
+are tagged `es-ES` and `pt-PT` for the same reason: day first, everywhere.
 
 ## 🚀 Getting started
 
@@ -222,7 +226,7 @@ src/
     _app.bar.*         bar mode
     _app.cuisine.tsx   kitchen mode
     api.ws.ts          the real-time entry point
-messages/{fr,en}.json  every line of copy in the interface
+messages/               every line of copy, one file per language
 project.inlang/        the inlang project: languages and message format
 i18n.config.ts         Paraglide options, shared by Vite and the CLI
 drizzle/               SQL migrations applied by wrangler
@@ -306,10 +310,10 @@ imports: the state machine, line merging, urgency thresholds. Which is why these
 tests run in milliseconds.
 
 `src/lib/i18n.test.ts` guards the message catalogues instead, because nothing
-else does: Paraglide is silent about a message that exists in French and not in
-English — it serves French and compiles fine. The tests check that both files
-carry the same keys, that a translation has not dropped a `{placeholder}`, and
-that no message has outlived the code that called it.
+else does: Paraglide is silent about a message that exists in one language and
+not in another — it serves the base language and compiles fine. The tests check
+that every file carries the same keys, that a translation has not dropped a
+`{placeholder}`, and that no message has outlived the code that called it.
 
 ## ⚠️ Not included
 

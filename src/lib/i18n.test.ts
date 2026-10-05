@@ -6,10 +6,11 @@ import { locales } from '#/paraglide/runtime'
 /**
  * Guards on the message catalogues themselves.
  *
- * Paraglide is silent about a missing translation: a message present in
- * `fr.json` but not in `en.json` compiles, and simply serves French to an
- * English screen. Nothing in the type system notices, because the message
- * function exists either way. These tests are what notices.
+ * Paraglide is silent about a missing translation: a message present in one
+ * catalogue but not in another compiles, and simply serves the base language
+ * to a screen that asked for something else. Nothing in the type system
+ * notices, because the message function exists either way. These tests are
+ * what notices.
  */
 
 const MESSAGES_DIR = new URL('../../messages/', import.meta.url)

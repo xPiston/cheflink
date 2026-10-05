@@ -12,8 +12,9 @@ import { type Locale } from '#/paraglide/runtime'
  * written by Paraglide's `setLocale` (see i18n.config.ts).
  *
  * `Locale` itself is generated from `project.inlang/settings.json`: adding a
- * third language there is enough for the type, and the compiler then points at
- * every place that has to handle it.
+ * language there is enough for the type, and the compiler then points at every
+ * place that has to handle it - which is how these two records know they are
+ * still complete.
  */
 
 /**
@@ -26,6 +27,8 @@ import { type Locale } from '#/paraglide/runtime'
 export const LOCALE_LABEL: Record<Locale, string> = {
   fr: 'Français',
   en: 'English',
+  es: 'Español',
+  pt: 'Português',
 }
 
 /**
@@ -35,11 +38,14 @@ export const LOCALE_LABEL: Record<Locale, string> = {
  * United States, so 05/10 would read as the 5th of October in French and the
  * 10th of May in English - the same screen, two meanings. The app runs in a
  * French venue, so English here means British English, which puts the day
- * first like the rest of the room.
+ * first like the rest of the room. The same reasoning picks `es-ES` and
+ * `pt-PT` rather than their American cousins: day first, everywhere.
  */
 const FORMAT_LOCALE: Record<Locale, string> = {
   fr: 'fr-FR',
   en: 'en-GB',
+  es: 'es-ES',
+  pt: 'pt-PT',
 }
 
 /** Short day/time, as used by the bar's history. */

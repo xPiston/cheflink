@@ -12,12 +12,13 @@ import { ChefHat, ClipboardList, History, LogOut, Moon, Sun, UtensilsCrossed, Wi
 import { useEffect } from 'react'
 
 import { Button } from '#/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '#/components/ui/dropdown-menu'
 import { LOCALE_LABEL } from '#/lib/locale'
 import { useMode, type Mode } from '#/lib/mode'
 import { useTheme } from '#/lib/theme'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
-import { getLocale, setLocale } from '#/paraglide/runtime'
+import { getLocale, locales, setLocale, type Locale } from '#/paraglide/runtime'
 import { logout } from '#/server/functions/auth'
 
 /**
@@ -177,8 +178,13 @@ function AppLayout() {
  * a sun says "click for light" without ambiguity, but a button reading "EN"
  * could just as well mean "you are in English" as "switch to English", and the
  * two readings contradict each other. Every interface that offers a language
- * shows the current one, so we do the same, and the target language is in the
- * accessible name and the tooltip.
+ * shows the current one, so we do the same: the trigger carries the current
+ * code, and the menu below it lists every language in its own words.
+ *
+ * With two languages the trigger alone was a toggle. It became a menu the day
+ * a third arrived, built from `LOCALE_LABEL` so a new entry in that one object
+ * is all a fifth language needs here - `locales` and `Record<Locale, ...>` do
+ * the rest of the typing.
  *
  * `setLocale` writes the cookie and reloads the document. There is no lighter
  * way: the page was rendered server-side in the old language, and the server
@@ -187,21 +193,34 @@ function AppLayout() {
  */
 function LocaleButton() {
   const locale = getLocale()
-  // Two languages, so the button is a toggle. A third one would make this a
-  // menu - LOCALE_LABEL is already the list it would be built from.
-  const next = locale === 'fr' ? 'en' : 'fr'
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label={m.shell_change_language()}
-      title={LOCALE_LABEL[next]}
-      onClick={() => setLocale(next)}
-      className="text-xs font-semibold"
-    >
-      {locale.toUpperCase()}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={m.shell_change_language()}
+          title={LOCALE_LABEL[locale]}
+          className="text-xs font-semibold"
+        >
+          {locale.toUpperCase()}
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end">
+        <DropdownMenuRadioGroup
+          value={locale}
+          onValueChange={(next) => setLocale(next as Locale)}
+        >
+          {locales.map((code) => (
+            <DropdownMenuRadioItem key={code} value={code}>
+              {LOCALE_LABEL[code]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
