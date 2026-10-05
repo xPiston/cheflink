@@ -18,7 +18,7 @@ On Cloudflare, within the free plan.
 
 </div>
 
-<img src="docs/screenshots/cuisine.jpg" alt="Kitchen screen: two orders as cards, the table's note highlighted, the waiting badge and the sound toggle" width="100%">
+<img src="docs/screenshots/cuisine.jpg" alt="Kitchen screen in English: three orders as cards, the table's note highlighted, the waiting badge and the sound toggle" width="100%">
 
 ---
 
@@ -60,7 +60,7 @@ mode, and either can switch with one click.
 | :--: | :--: |
 | <img src="docs/screenshots/bar.jpg" alt="Order taking: menu grouped by category on the left, sticky basket on the right with the table and the note"> | <img src="docs/screenshots/historique.jpg" alt="Order history with statuses, sent time and ready time"> |
 | **Order taking** — menu, basket, note | **History** — statuses and timestamps |
-| <img src="docs/screenshots/plats.jpg" alt="Dish management: name, category, availability"> | <img src="docs/screenshots/plat-edition.jpg" alt="Dish editing dialog"> |
+| <img src="docs/screenshots/plats.jpg" alt="Dish management: name, category, availability"> | <img src="docs/screenshots/plat-edition.jpg" alt="The new-dish dialog: name, description, category and availability"> |
 | **Dishes** — the menu, editable mid-service | **Editing** — name, category, availability |
 
 <div align="center">
@@ -89,6 +89,14 @@ The copy lives in `messages/fr.json` and `messages/en.json` and is **compiled**
 into `src/paraglide`: each message becomes a function, so a page only ships the
 messages it uses, and a typo in a message name is a type error rather than a
 blank on a screen.
+
+| | |
+| :--: | :--: |
+| <img src="docs/screenshots/langue-en.jpg" alt="The kitchen screen in English: In the kitchen, 3 orders, Enable sound, Tap to mark as ready"> | <img src="docs/screenshots/langue-fr.jpg" alt="The same kitchen screen in French: En cuisine, 3 commandes, Activer le son, Appuyer pour marquer pret"> |
+| **English** | **French** |
+
+The same screen, one button apart - the `EN`/`FR` in the header. The order note
+is not translated and should not be: it is what the server typed.
 
 Three decisions worth the words:
 
