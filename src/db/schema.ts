@@ -51,13 +51,19 @@ export const orders = sqliteTable(
     /** "Table 4", "Comptoir"... free text: it is what the server shouts. */
     tableLabel: text('table_label').notNull(),
     note: text('note'),
-    /** 'en_attente' | 'terminee' - see src/lib/orders.ts. */
+    /** 'en_attente' | 'terminee' | 'annulee' - see src/lib/orders.ts. */
     status: text('status').notNull(),
     createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
     completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+    /**
+     * Its own column rather than reusing `completed_at`: an order that was
+     * cancelled was never completed, and one field holding either fact would
+     * make "how long does the kitchen take" count the orders it never cooked.
+     */
+    cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
     index('idx_orders_status_created').on(table.status, table.createdAt),

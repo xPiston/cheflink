@@ -1,12 +1,10 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
   "common_loading": "Chargement...",
   "common_cancel": "Annuler",
   "common_save": "Enregistrer",
   "common_saving": "Enregistrement...",
   "common_delete": "Supprimer",
-
   "shell_device_mode": "Mode de l'appareil",
   "shell_mode_bar": "Bar",
   "shell_mode_kitchen": "Cuisine",
@@ -14,20 +12,16 @@
   "shell_switch_to_light": "Passer en thème clair",
   "shell_switch_to_dark": "Passer en thème sombre",
   "shell_change_language": "Changer de langue",
-
   "nav_take_order": "Prise de commande",
   "nav_history": "Historique",
   "nav_dishes": "Plats",
   "nav_orders": "Commandes",
-
   "home_opening": "Ouverture du service...",
-
   "login_subtitle": "Connectez-vous pour prendre le service.",
   "login_email": "Adresse e-mail",
   "login_password": "Mot de passe",
   "login_submit": "Se connecter",
   "login_submitting": "Connexion...",
-
   "order_menu_loading": "Chargement de la carte...",
   "order_no_dish_available": "Aucun plat disponible. Ajoutez-en depuis l'onglet Plats.",
   "order_remove_one": "Retirer un {dish}",
@@ -35,8 +29,13 @@
   "order_basket_title": "Commande",
   "order_dish_count": [
     {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
       "match": {
         "countPlural=one": "{count} plat",
         "countPlural=other": "{count} plats"
@@ -54,12 +53,16 @@
   "order_need_table": "Indiquez la table pour pouvoir envoyer.",
   "order_sent": "Commande envoyée en cuisine - {table}",
   "order_send_failed": "La commande n'est pas partie. Réessayez.",
-
   "kitchen_title": "En cuisine",
   "kitchen_order_count": [
     {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
       "match": {
         "countPlural=one": "{count} commande",
         "countPlural=other": "{count} commandes"
@@ -75,7 +78,6 @@
   "kitchen_tap_to_complete": "Appuyer pour marquer prêt",
   "kitchen_waited_minutes": "{minutes} min",
   "kitchen_complete_failed": "La commande n'a pas pu être validée.",
-
   "history_filter_all": "Toutes",
   "history_filter_pending": "En attente",
   "history_filter_done": "Terminées",
@@ -85,7 +87,18 @@
   "history_sent_at": "Envoyée à {time}",
   "history_ready_at": "prête à {time}",
   "history_note": "Note : {note}",
-
+  "history_filter_cancelled": "Annulées",
+  "history_status_cancelled": "Annulée",
+  "history_cancelled_at": "annulée à {time}",
+  "history_cancel": "Annuler",
+  "history_cancel_order": "Annuler la commande de {table}",
+  "history_cancel_title": "Annuler la commande de {table} ?",
+  "history_cancel_warning": "La cuisine arrête tout de suite. Si c'est déjà en préparation, prévenez-la de vive voix.",
+  "history_cancel_keep": "Garder",
+  "history_cancel_confirm": "Annuler la commande",
+  "history_cancel_pending": "Annulation…",
+  "history_cancel_done": "Commande de {table} annulée.",
+  "history_cancel_failed": "La commande n'a pas pu être annulée.",
   "dishes_new": "Nouveau plat",
   "dishes_edit": "Modifier le plat",
   "dishes_empty": "La carte est vide. Ajoutez un premier plat.",
@@ -104,7 +117,6 @@
   "dishes_delete_failed": "Impossible de supprimer ce plat.",
   "dishes_delete_title": "Supprimer « {dish} » ?",
   "dishes_delete_hint": "Les commandes déjà passées gardent le nom du plat : l'historique n'est pas touché.",
-
   "error_sign_in_required": "Connexion requise.",
   "error_invalid_credentials": "Identifiants invalides.",
   "error_email_invalid": "L'adresse e-mail n'est pas valide.",

@@ -29,6 +29,7 @@ export type OrderView = {
   status: OrderStatus
   createdAt: number
   completedAt: number | null
+  cancelledAt: number | null
   lines: OrderLineView[]
 }
 
@@ -125,6 +126,7 @@ export const createOrder = createServerFn({ method: 'POST' })
       status: ORDER_STATUS.Pending,
       createdAt: now.getTime(),
       completedAt: null,
+      cancelledAt: null,
       lines: lines.map(({ id, dishName, quantity }) => ({ id, dishName, quantity })),
     }
   })
@@ -139,7 +141,7 @@ export const listPendingOrders = createServerFn({ method: 'GET' }).handler(
 )
 
 const historyInput = z.object({
-  status: z.enum([ORDER_STATUS.Pending, ORDER_STATUS.Done]).optional(),
+  status: z.enum([ORDER_STATUS.Pending, ORDER_STATUS.Done, ORDER_STATUS.Cancelled]).optional(),
   limit: z.number().int().min(1).max(200).default(50),
 })
 
@@ -196,6 +198,49 @@ export const completeOrder = createServerFn({ method: 'POST' })
     return view
   })
 
+/**
+ * The bar takes an order back: it becomes "annulee".
+ *
+ * Only from `en_attente`, and the state machine is what says so. A finished
+ * order has been cooked - there is a plate, and marking it cancelled would
+ * make it disappear from the only screen that knows about it.
+ *
+ * Same `and(id, status = en_attente)` guard as completing, for the same
+ * reason: during service the bar cancels while the kitchen taps ready, and
+ * whichever write lands first wins. The other one changes nothing and returns
+ * the order as it now is, rather than failing in somebody's face mid-rush.
+ */
+export const cancelOrder = createServerFn({ method: 'POST' })
+  .validator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data }): Promise<OrderView> => {
+    await requireUser()
+
+    const db = getDb()
+    const [existing] = await db.select().from(orders).where(eq(orders.id, data.id)).limit(1)
+    if (!existing) {
+      throw new OrderNotFoundError(data.id)
+    }
+
+    const status = isOrderStatus(existing.status) ? existing.status : ORDER_STATUS.Pending
+    if (canTransition(status, ORDER_STATUS.Cancelled)) {
+      await db
+        .update(orders)
+        .set({ status: ORDER_STATUS.Cancelled, cancelledAt: new Date() })
+        .where(and(eq(orders.id, data.id), eq(orders.status, ORDER_STATUS.Pending)))
+
+      // The kitchen is the screen that must not keep cooking: the card has to
+      // go now, not on the next safety refetch.
+      await publish({ type: 'order.cancelled', orderId: data.id })
+    }
+
+    const [view] = await loadOrders(eq(orders.id, data.id), 'desc')
+    if (!view) {
+      throw new OrderNotFoundError(data.id)
+    }
+
+    return view
+  })
+
 async function loadOrders(
   where: ReturnType<typeof eq> | undefined,
   direction: 'asc' | 'desc',
@@ -241,6 +286,7 @@ async function loadOrders(
       status: isOrderStatus(row.status) ? row.status : ORDER_STATUS.Pending,
       createdAt: row.createdAt.getTime(),
       completedAt: row.completedAt?.getTime() ?? null,
+      cancelledAt: row.cancelledAt?.getTime() ?? null,
       lines,
     }
   })

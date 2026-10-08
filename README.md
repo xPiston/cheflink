@@ -12,7 +12,7 @@ On Cloudflare, within the free plan.
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 [![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
-[![Tests](https://img.shields.io/badge/tests-14%20passing-22C55E)](#-tests)
+[![Tests](https://img.shields.io/badge/tests-20%20passing-22C55E)](#-tests)
 [![Deploy](https://img.shields.io/badge/deploy-on%20push%20to%20main-22C55E?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -45,6 +45,8 @@ mode, and either can switch with one click.
 - 🍔 **Menu editable mid-service** — create, edit, delete a dish, or mark it
   unavailable without removing it
 - 📋 **Order history with statuses** — sent at, ready at, filterable
+- ↩️ **Cancel an order** — the table left, or it was never meant to be sent: the
+  bar takes it back and the kitchen card disappears at once
 - 📝 **Free-form note per order** — "no onions, allergy", highlighted in the
   kitchen
 - ⏱️ **Waiting badge** — the card changes colour at 8 then 15 minutes
@@ -55,7 +57,7 @@ mode, and either can switch with one click.
   device and resolved **server-side**, so the first HTML is already in the
   right language
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
-- ✅ **18 tests** on the business rules and the message catalogues, with no
+- ✅ **20 tests** on the business rules and the message catalogues, with no
   database and no browser
 
 | | |
@@ -114,8 +116,8 @@ tablets: there is nothing to index and nothing to share, so `/fr/cuisine` would
 only add another thing to keep in sync — starting with `/api/ws`, which must not
 be localized. Resolution order is cookie → `Accept-Language` → French.
 
-**Some French stays in the code, on purpose.** `en_attente` and `terminee` are
-in D1; `clair` and `sombre` are in the browsers of devices already in service.
+**Some French stays in the code, on purpose.** `en_attente`, `terminee` and
+`annulee` are in D1; `clair` and `sombre` are in the browsers of devices already in service.
 Renaming them would need a migration for the first and would silently reset
 everyone's choice for the second. They are stored values, not copy — the labels
 on top of them are translated.
@@ -283,6 +285,16 @@ the start of service beats a chime you discover at 8pm has never worked.
   `status = 'en_attente'`: if two people tap the same card a second apart, the
   second one changes nothing and sees no error. In service, that is not an
   incident.
+- **An order leaves `en_attente` once, in one of two directions**, and never
+  comes back. Cancelling guards on the same `WHERE`, so the bar cancelling at
+  the moment the kitchen taps ready is a race one of them simply wins — the
+  other changes nothing and sees the order as it now is. A finished order
+  cannot be cancelled: by then there is a plate, and hiding it would leave
+  somebody with it.
+- **Cancelling is the one gesture that asks first.** Everything else here is
+  undone by doing it again; this one stops a kitchen that may already be
+  cooking, from a list of near-identical rows where the wrong one is a thumb
+  away.
 - **The kitchen update is optimistic**: the card disappears under the finger,
   without waiting for the server, and comes back if the write fails.
 - **Grouped writes go through `db.batch()`**, not a transaction: D1 exposes no
@@ -321,8 +333,6 @@ that every file carries the same keys, that a translation has not dropped a
 - **No roles.** Any signed-in account can switch to kitchen mode, complete an
   order and edit the menu. That was the choice; separate roles would take one
   column and one guard per screen, nothing more.
-- **No order cancellation.** An order goes from pending to done, and nothing
-  else. The state machine is ready for a third state without breaking.
 - **A single venue.** The Durable Object id is the `HUB` constant in
   `src/server/events.ts`; serving several bars would mean turning it into the
   venue's id — and nothing else would move.

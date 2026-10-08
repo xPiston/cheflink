@@ -20,9 +20,10 @@ import {
  */
 
 describe('machine a etats', () => {
-  it('ne connait que deux etats', () => {
+  it('ne connait que trois etats', () => {
     expect(isOrderStatus('en_attente')).toBe(true)
     expect(isOrderStatus('terminee')).toBe(true)
+    expect(isOrderStatus('annulee')).toBe(true)
     expect(isOrderStatus('en_cours')).toBe(false)
   })
 
@@ -30,6 +31,22 @@ describe('machine a etats', () => {
     expect(canTransition(ORDER_STATUS.Pending, ORDER_STATUS.Done)).toBe(true)
     expect(canTransition(ORDER_STATUS.Done, ORDER_STATUS.Pending)).toBe(false)
     expect(canTransition(ORDER_STATUS.Done, ORDER_STATUS.Done)).toBe(false)
+  })
+
+  it('va de en_attente a annulee', () => {
+    expect(canTransition(ORDER_STATUS.Pending, ORDER_STATUS.Cancelled)).toBe(true)
+  })
+
+  /**
+   * Les deux sorties sont definitives, et pour des raisons differentes : une
+   * commande terminee a ete cuisinee, une commande annulee a fait arreter la
+   * cuisine. Dans les deux cas, revenir en arriere effacerait un fait.
+   */
+  it('ne sort plus d une commande terminee ou annulee', () => {
+    expect(canTransition(ORDER_STATUS.Done, ORDER_STATUS.Cancelled)).toBe(false)
+    expect(canTransition(ORDER_STATUS.Cancelled, ORDER_STATUS.Done)).toBe(false)
+    expect(canTransition(ORDER_STATUS.Cancelled, ORDER_STATUS.Pending)).toBe(false)
+    expect(canTransition(ORDER_STATUS.Cancelled, ORDER_STATUS.Cancelled)).toBe(false)
   })
 })
 

@@ -15,6 +15,13 @@
       "when": 1790869695365,
       "tag": "0001_drop_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791467969385,
+      "tag": "0002_cancelled_orders",
+      "breakpoints": true
     }
   ]
 }

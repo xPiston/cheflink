@@ -1,12 +1,10 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
   "common_loading": "Loading...",
   "common_cancel": "Cancel",
   "common_save": "Save",
   "common_saving": "Saving...",
   "common_delete": "Delete",
-
   "shell_device_mode": "Device mode",
   "shell_mode_bar": "Bar",
   "shell_mode_kitchen": "Kitchen",
@@ -14,20 +12,16 @@
   "shell_switch_to_light": "Switch to the light theme",
   "shell_switch_to_dark": "Switch to the dark theme",
   "shell_change_language": "Change language",
-
   "nav_take_order": "New order",
   "nav_history": "History",
   "nav_dishes": "Dishes",
   "nav_orders": "Orders",
-
   "home_opening": "Opening the service...",
-
   "login_subtitle": "Sign in to start your shift.",
   "login_email": "Email address",
   "login_password": "Password",
   "login_submit": "Sign in",
   "login_submitting": "Signing in...",
-
   "order_menu_loading": "Loading the menu...",
   "order_no_dish_available": "No dish available. Add one from the Dishes tab.",
   "order_remove_one": "Remove one {dish}",
@@ -35,8 +29,13 @@
   "order_basket_title": "Order",
   "order_dish_count": [
     {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
       "match": {
         "countPlural=one": "{count} dish",
         "countPlural=other": "{count} dishes"
@@ -54,12 +53,16 @@
   "order_need_table": "Enter the table before sending.",
   "order_sent": "Order sent to the kitchen - {table}",
   "order_send_failed": "The order did not go through. Try again.",
-
   "kitchen_title": "In the kitchen",
   "kitchen_order_count": [
     {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
       "match": {
         "countPlural=one": "{count} order",
         "countPlural=other": "{count} orders"
@@ -75,7 +78,6 @@
   "kitchen_tap_to_complete": "Tap to mark as ready",
   "kitchen_waited_minutes": "{minutes} min",
   "kitchen_complete_failed": "The order could not be completed.",
-
   "history_filter_all": "All",
   "history_filter_pending": "Pending",
   "history_filter_done": "Done",
@@ -85,7 +87,18 @@
   "history_sent_at": "Sent at {time}",
   "history_ready_at": "ready at {time}",
   "history_note": "Note: {note}",
-
+  "history_filter_cancelled": "Cancelled",
+  "history_status_cancelled": "Cancelled",
+  "history_cancelled_at": "cancelled at {time}",
+  "history_cancel": "Cancel",
+  "history_cancel_order": "Cancel the order for {table}",
+  "history_cancel_title": "Cancel the order for {table}?",
+  "history_cancel_warning": "The kitchen stops straight away. If it is already being cooked, tell them out loud.",
+  "history_cancel_keep": "Keep it",
+  "history_cancel_confirm": "Cancel the order",
+  "history_cancel_pending": "Cancelling…",
+  "history_cancel_done": "Order for {table} cancelled.",
+  "history_cancel_failed": "The order could not be cancelled.",
   "dishes_new": "New dish",
   "dishes_edit": "Edit the dish",
   "dishes_empty": "The menu is empty. Add a first dish.",
@@ -104,7 +117,6 @@
   "dishes_delete_failed": "Could not delete this dish.",
   "dishes_delete_title": "Delete \"{dish}\"?",
   "dishes_delete_hint": "Orders already placed keep the dish name: the history is left untouched.",
-
   "error_sign_in_required": "You need to sign in.",
   "error_invalid_credentials": "Invalid credentials.",
   "error_email_invalid": "That email address is not valid.",

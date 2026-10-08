@@ -11,6 +11,7 @@ import { bindings } from './cloudflare'
 export type AppEvent =
   | { type: 'order.created'; orderId: string }
   | { type: 'order.completed'; orderId: string }
+  | { type: 'order.cancelled'; orderId: string }
   | { type: 'dishes.changed' }
 
 /**

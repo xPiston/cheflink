@@ -15,13 +15,26 @@ export const ORDER_STATUS = {
   Pending: 'en_attente',
   /** The kitchen tapped the card: it is ready. */
   Done: 'terminee',
+  /** The bar took it back: the table left, or it was never meant to be sent. */
+  Cancelled: 'annulee',
 } as const
 
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS]
 
+/**
+ * An order leaves `en_attente` once, in one of two directions, and never
+ * comes back.
+ *
+ * A finished order cannot be cancelled: by then it has been cooked, and
+ * pretending otherwise would hide a plate somebody has to deal with. A
+ * cancelled one cannot be revived either - the kitchen stopped, and the way
+ * to undo that is to send the order again, which is one tap at the bar and
+ * leaves a trace of both.
+ */
 const TRANSITIONS: Record<OrderStatus, ReadonlyArray<OrderStatus>> = {
-  [ORDER_STATUS.Pending]: [ORDER_STATUS.Done],
+  [ORDER_STATUS.Pending]: [ORDER_STATUS.Done, ORDER_STATUS.Cancelled],
   [ORDER_STATUS.Done]: [],
+  [ORDER_STATUS.Cancelled]: [],
 }
 
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
@@ -34,7 +47,11 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
  * impossible state) is kept distinct from "already done" (a no-op).
  */
 export function isOrderStatus(value: string): value is OrderStatus {
-  return value === ORDER_STATUS.Pending || value === ORDER_STATUS.Done
+  return (
+    value === ORDER_STATUS.Pending ||
+    value === ORDER_STATUS.Done ||
+    value === ORDER_STATUS.Cancelled
+  )
 }
 
 export type OrderLineInput = {

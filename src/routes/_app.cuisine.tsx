@@ -59,6 +59,11 @@ function KitchenPage() {
       if (event.type === 'order.completed') {
         void queryClient.invalidateQueries({ queryKey: ['orders'] })
       }
+      // The bar took it back. No chime: the kitchen is being told to stop,
+      // and a second bell would read as a second order arriving.
+      if (event.type === 'order.cancelled') {
+        void queryClient.invalidateQueries({ queryKey: ['orders'] })
+      }
     },
     // On every (re)connection of the stream: start again from the real state,
     // otherwise an order sent during the outage would stay invisible.
