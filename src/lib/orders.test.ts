@@ -5,8 +5,10 @@ import {
   InvalidQuantityError,
   ORDER_STATUS,
   canTransition,
+  isHistoryPeriod,
   isOrderStatus,
   mergeLines,
+  periodStart,
   urgency,
   waitingMinutes,
 } from './orders'
@@ -118,5 +120,30 @@ describe('attente en cuisine', () => {
     expect(urgency(8)).toBe('presse')
     expect(urgency(14)).toBe('presse')
     expect(urgency(15)).toBe('tres_presse')
+  })
+})
+
+describe('fenetres de l historique', () => {
+  const now = new Date('2026-10-09T01:30:00.000Z')
+
+  it('ne connait que trois fenetres', () => {
+    expect(isHistoryPeriod('1d')).toBe(true)
+    expect(isHistoryPeriod('7d')).toBe(true)
+    expect(isHistoryPeriod('30d')).toBe(true)
+    expect(isHistoryPeriod('90d')).toBe(false)
+  })
+
+  /**
+   * Glissante, pas calendaire. A 1h30 du matin le bar est encore dans le
+   * service de la veille : une fenetre qui repart a minuit serait vide a
+   * l heure exacte ou quelqu un la consulte.
+   */
+  it('remonte de vingt-quatre heures, pas jusqu a minuit', () => {
+    expect(periodStart('1d', now).toISOString()).toBe('2026-10-08T01:30:00.000Z')
+  })
+
+  it('compte les jours pleins pour les deux autres', () => {
+    expect(periodStart('7d', now).toISOString()).toBe('2026-10-02T01:30:00.000Z')
+    expect(periodStart('30d', now).toISOString()).toBe('2026-09-09T01:30:00.000Z')
   })
 })

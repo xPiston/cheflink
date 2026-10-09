@@ -83,13 +83,41 @@
   "history_filter_done": "Done",
   "history_status_pending": "Pending",
   "history_status_done": "Done",
-  "history_empty": "No order matches this filter.",
-  "history_sent_at": "Sent at {time}",
-  "history_ready_at": "ready at {time}",
+  "history_empty": "No order in this window.",
   "history_note": "Note: {note}",
+  "history_period_1d": "24 h",
+  "history_period_7d": "7 days",
+  "history_period_30d": "30 days",
+  "history_search": "Search a table, a dish…",
+  "history_col_table": "Table",
+  "history_col_dishes": "Dishes",
+  "history_col_status": "Status",
+  "history_col_sent": "Sent",
+  "history_col_closed": "Closed",
+  "history_col_duration": "Took",
+  "history_duration_minutes": "{minutes} min",
+  "history_truncated": "Only the {count} most recent orders in this window are shown.",
+  "history_no_match": "No order matches this search.",
+  "history_page_of": "Page {page} of {pages}",
+  "history_previous": "Previous",
+  "history_next": "Next",
+  "history_order_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} order",
+        "countPlural=other": "{count} orders"
+      }
+    }
+  ],
   "history_filter_cancelled": "Cancelled",
   "history_status_cancelled": "Cancelled",
-  "history_cancelled_at": "cancelled at {time}",
   "history_cancel": "Cancel",
   "history_cancel_order": "Cancel the order for {table}",
   "history_cancel_title": "Cancel the order for {table}?",

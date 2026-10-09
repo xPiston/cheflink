@@ -140,3 +140,41 @@ export function urgency(waitedMinutes: number): 'calme' | 'presse' | 'tres_press
   if (waitedMinutes >= 8) return 'presse'
   return 'calme'
 }
+
+/**
+ * The windows the history offers.
+ *
+ * Stored as plain day counts rather than labels: the screen translates them,
+ * the server only has to subtract.
+ */
+export const HISTORY_PERIODS = {
+  '1d': 1,
+  '7d': 7,
+  '30d': 30,
+} as const
+
+export type HistoryPeriod = keyof typeof HISTORY_PERIODS
+
+/**
+ * What the history opens on: the last twenty-four hours.
+ *
+ * It is the question the bar actually asks - "what went out tonight" - and
+ * the cheapest of the three to answer.
+ */
+export const DEFAULT_HISTORY_PERIOD: HistoryPeriod = '1d'
+
+export function isHistoryPeriod(value: string): value is HistoryPeriod {
+  return value in HISTORY_PERIODS
+}
+
+/**
+ * The oldest order a window includes.
+ *
+ * A ROLLING window, not a calendar one: "1 day" means the last twenty-four
+ * hours, not "since midnight". A bar that closes at two in the morning is
+ * still in the same service at one, and a history that emptied itself at
+ * midnight would be useless at exactly the hour somebody checks it.
+ */
+export function periodStart(period: HistoryPeriod, now: Date): Date {
+  return new Date(now.getTime() - HISTORY_PERIODS[period] * 24 * 60 * 60 * 1000)
+}

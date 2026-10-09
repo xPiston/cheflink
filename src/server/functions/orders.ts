@@ -1,15 +1,18 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { getDb } from '#/db/client'
 import { dishes, orderItems, orders } from '#/db/schema'
 import {
+  DEFAULT_HISTORY_PERIOD,
+  HISTORY_PERIODS,
   ORDER_STATUS,
   UnavailableDishError,
   canTransition,
   isOrderStatus,
   mergeLines,
+  periodStart,
   type OrderStatus,
 } from '#/lib/orders'
 import { m } from '#/paraglide/messages'
@@ -140,18 +143,53 @@ export const listPendingOrders = createServerFn({ method: 'GET' }).handler(
   }
 )
 
+/**
+ * How many orders the history will return, whatever the window.
+ *
+ * The screen paginates what it is given, so this is the real ceiling. A busy
+ * bar over thirty days goes well past it - hence `truncated` below, because a
+ * list that silently stops is worse than one that says where it stopped.
+ */
+export const HISTORY_LIMIT = 500
+
 const historyInput = z.object({
   status: z.enum([ORDER_STATUS.Pending, ORDER_STATUS.Done, ORDER_STATUS.Cancelled]).optional(),
-  limit: z.number().int().min(1).max(200).default(50),
+  period: z.enum(Object.keys(HISTORY_PERIODS) as [string, ...string[]]).default(DEFAULT_HISTORY_PERIOD),
 })
 
-/** The bar's history: most recent first, filterable by status. */
+export type OrderHistory = {
+  orders: OrderView[]
+  /** Whether the window holds more than was returned. */
+  truncated: boolean
+}
+
+/**
+ * The bar's history: most recent first, within a window, filterable by status.
+ *
+ * The window is a `WHERE`, not a slice taken in the browser. Thirty days of a
+ * busy service is thousands of rows, and the one thing a tablet on bar wifi
+ * must not do is download them to show fifty.
+ */
 export const listOrderHistory = createServerFn({ method: 'GET' })
   .validator(historyInput)
-  .handler(async ({ data }): Promise<OrderView[]> => {
+  .handler(async ({ data }): Promise<OrderHistory> => {
     await requireUser()
 
-    return loadOrders(data.status ? eq(orders.status, data.status) : undefined, 'desc', data.limit)
+    const period = data.period as keyof typeof HISTORY_PERIODS
+    const filters: SQL[] = [gte(orders.createdAt, periodStart(period, new Date()))]
+
+    if (data.status) {
+      filters.push(eq(orders.status, data.status))
+    }
+
+    // One row over the ceiling: asking for 501 is how we know 500 was not the
+    // whole truth, without a second COUNT query.
+    const rows = await loadOrders(and(...filters), 'desc', HISTORY_LIMIT + 1)
+
+    return {
+      orders: rows.slice(0, HISTORY_LIMIT),
+      truncated: rows.length > HISTORY_LIMIT,
+    }
   })
 
 export class OrderNotFoundError extends Error {
@@ -242,7 +280,7 @@ export const cancelOrder = createServerFn({ method: 'POST' })
   })
 
 async function loadOrders(
-  where: ReturnType<typeof eq> | undefined,
+  where: SQL | undefined,
   direction: 'asc' | 'desc',
   limit = 200
 ): Promise<OrderView[]> {

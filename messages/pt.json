@@ -83,13 +83,41 @@
   "history_filter_done": "Concluídos",
   "history_status_pending": "Pendente",
   "history_status_done": "Concluído",
-  "history_empty": "Nenhum pedido corresponde a este filtro.",
-  "history_sent_at": "Enviado às {time}",
-  "history_ready_at": "pronto às {time}",
+  "history_empty": "Nenhum pedido neste período.",
   "history_note": "Nota: {note}",
+  "history_period_1d": "24 h",
+  "history_period_7d": "7 dias",
+  "history_period_30d": "30 dias",
+  "history_search": "Procurar uma mesa, um prato…",
+  "history_col_table": "Mesa",
+  "history_col_dishes": "Pratos",
+  "history_col_status": "Estado",
+  "history_col_sent": "Enviado",
+  "history_col_closed": "Fechado",
+  "history_col_duration": "Duração",
+  "history_duration_minutes": "{minutes} min",
+  "history_truncated": "Apenas os {count} pedidos mais recentes deste período são mostrados.",
+  "history_no_match": "Nenhum pedido corresponde a esta procura.",
+  "history_page_of": "Página {page} de {pages}",
+  "history_previous": "Anterior",
+  "history_next": "Seguinte",
+  "history_order_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} pedido",
+        "countPlural=other": "{count} pedidos"
+      }
+    }
+  ],
   "history_filter_cancelled": "Anulados",
   "history_status_cancelled": "Anulado",
-  "history_cancelled_at": "anulado às {time}",
   "history_cancel": "Anular",
   "history_cancel_order": "Anular o pedido de {table}",
   "history_cancel_title": "Anular o pedido de {table}?",

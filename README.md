@@ -12,7 +12,7 @@ On Cloudflare, within the free plan.
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 [![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
-[![Tests](https://img.shields.io/badge/tests-20%20passing-22C55E)](#-tests)
+[![Tests](https://img.shields.io/badge/tests-23%20passing-22C55E)](#-tests)
 [![Deploy](https://img.shields.io/badge/deploy-on%20push%20to%20main-22C55E?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -44,7 +44,9 @@ mode, and either can switch with one click.
   optimistic
 - 🍔 **Menu editable mid-service** — create, edit, delete a dish, or mark it
   unavailable without removing it
-- 📋 **Order history with statuses** — sent at, ready at, filterable
+- 📋 **Order history as a table** — a 24 h / 7 day / 30 day window, filterable
+  by status, searchable by table or dish, sortable on when it was sent, when
+  it closed and how long the kitchen took
 - ↩️ **Cancel an order** — the table left, or it was never meant to be sent: the
   bar takes it back and the kitchen card disappears at once
 - 📝 **Free-form note per order** — "no onions, allergy", highlighted in the
@@ -57,13 +59,13 @@ mode, and either can switch with one click.
   device and resolved **server-side**, so the first HTML is already in the
   right language
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
-- ✅ **20 tests** on the business rules and the message catalogues, with no
+- ✅ **23 tests** on the business rules and the message catalogues, with no
   database and no browser
 
 | | |
 | :--: | :--: |
 | <img src="docs/screenshots/bar.jpg" alt="Order taking: menu grouped by category on the left, sticky basket on the right with the table and the note"> | <img src="docs/screenshots/historique.jpg" alt="Order history with statuses, sent time and ready time"> |
-| **Order taking** — menu, basket, note | **History** — statuses and timestamps |
+| **Order taking** — menu, basket, note | **History** — windows, search, sorting |
 | <img src="docs/screenshots/plats.jpg" alt="Dish management: name, category, availability"> | <img src="docs/screenshots/plat-edition.jpg" alt="The new-dish dialog: name, description, category and availability"> |
 | **Dishes** — the menu, editable mid-service | **Editing** — name, category, availability |
 
@@ -291,6 +293,21 @@ the start of service beats a chime you discover at 8pm has never worked.
   other changes nothing and sees the order as it now is. A finished order
   cannot be cancelled: by then there is a plate, and hiding it would leave
   somebody with it.
+- **The history window is a `WHERE`, not a slice.** Thirty days of a busy
+  service is thousands of rows, and the one thing a tablet on bar wifi must
+  not do is download them to show twelve. The window is rolling rather than
+  calendar — "24 h" means the last twenty-four hours, because a bar closing
+  at two in the morning is still in the same service at one, and a history
+  that emptied itself at midnight would be useless at exactly the hour
+  somebody checks it. The server returns at most 500 orders and says so when
+  it had to stop, because a list that silently ends reads as orders that were
+  never taken.
+- **A column the table can sort or search is a column with an accessor.** In
+  TanStack Table v9 both `getCanSort()` and the global filter are gated on
+  `column.accessorFn`: a display column renders fine, sorts never, and is
+  invisible to the search box. The dishes column has an accessor it does not
+  render for exactly that reason — without it, a search box offering to find
+  a dish would find none.
 - **Cancelling is the one gesture that asks first.** Everything else here is
   undone by doing it again; this one stops a kitchen that may already be
   cooking, from a list of near-identical rows where the wrong one is a thumb

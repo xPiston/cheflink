@@ -83,13 +83,41 @@
   "history_filter_done": "Terminées",
   "history_status_pending": "En attente",
   "history_status_done": "Terminée",
-  "history_empty": "Aucune commande pour ce filtre.",
-  "history_sent_at": "Envoyée à {time}",
-  "history_ready_at": "prête à {time}",
+  "history_empty": "Aucune commande sur cette période.",
   "history_note": "Note : {note}",
+  "history_period_1d": "24 h",
+  "history_period_7d": "7 jours",
+  "history_period_30d": "30 jours",
+  "history_search": "Rechercher une table, un plat…",
+  "history_col_table": "Table",
+  "history_col_dishes": "Plats",
+  "history_col_status": "Statut",
+  "history_col_sent": "Envoyée",
+  "history_col_closed": "Close",
+  "history_col_duration": "Durée",
+  "history_duration_minutes": "{minutes} min",
+  "history_truncated": "Seules les {count} commandes les plus récentes de cette période sont affichées.",
+  "history_no_match": "Aucune commande ne correspond à cette recherche.",
+  "history_page_of": "Page {page} sur {pages}",
+  "history_previous": "Précédent",
+  "history_next": "Suivant",
+  "history_order_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} commande",
+        "countPlural=other": "{count} commandes"
+      }
+    }
+  ],
   "history_filter_cancelled": "Annulées",
   "history_status_cancelled": "Annulée",
-  "history_cancelled_at": "annulée à {time}",
   "history_cancel": "Annuler",
   "history_cancel_order": "Annuler la commande de {table}",
   "history_cancel_title": "Annuler la commande de {table} ?",
