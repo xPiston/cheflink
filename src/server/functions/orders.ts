@@ -3,8 +3,8 @@ import { and, desc, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { getDb } from '#/db/client'
-import { categories, dishes, orderItems, orders } from '#/db/schema'
-import { isCategoryColor, type CategoryColor } from '#/lib/categories'
+import { dishes, orderItems, orders } from '#/db/schema'
+import { isDishColor, type DishColor } from '#/lib/colors'
 import {
   DEFAULT_HISTORY_PERIOD,
   HISTORY_PERIODS,
@@ -26,18 +26,18 @@ export type OrderLineView = {
   dishName: string
   quantity: number
   /**
-   * The colour of the dish's category, read NOW rather than copied when the
-   * order was sent - the opposite choice to `dishName` just above, and on
-   * purpose. The name is copied because the history must keep saying what was
-   * served even after the dish is renamed or pulled. The colour is a cue for
-   * the cook looking at a card that is on the screen this minute: recolouring
-   * "Desserts" has to recolour the card, not the next order only.
+   * The dish's colour, read NOW rather than copied when the order was sent -
+   * the opposite choice to `dishName` just above, and on purpose. The name is
+   * copied because the history must keep saying what was served even after
+   * the dish is renamed or pulled. The colour is a cue for the cook looking
+   * at a card that is on the screen this minute: recolouring a dish has to
+   * recolour the card, not the next order only.
    *
    * Null when the dish has since been deleted - the line then shows its name
    * and no dot, which is exactly what it is: something that was served and is
    * no longer on the card.
    */
-  color: CategoryColor | null
+  color: DishColor | null
 }
 
 export type OrderView = {
@@ -85,9 +85,8 @@ export const createOrder = createServerFn({ method: 'POST' })
     const db = getDb()
     const merged = mergeLines(data.lines)
     const rows = await db
-      .select({ dish: dishes, color: categories.color })
+      .select()
       .from(dishes)
-      .leftJoin(categories, eq(categories.id, dishes.categoryId))
       .where(
         inArray(
           dishes.id,
@@ -95,27 +94,27 @@ export const createOrder = createServerFn({ method: 'POST' })
         )
       )
 
-    const byId = new Map(rows.map((row) => [row.dish.id, row]))
+    const byId = new Map(rows.map((row) => [row.id, row]))
     const orderId = newId()
     const now = new Date()
     const day = serviceDay(now)
 
     const lines = merged.map((line) => {
-      const found = byId.get(line.dishId)
-      if (!found) {
+      const dish = byId.get(line.dishId)
+      if (!dish) {
         throw new UnavailableDishError(line.dishId)
       }
-      if (!found.dish.available) {
-        throw new UnavailableDishError(found.dish.name)
+      if (!dish.available) {
+        throw new UnavailableDishError(dish.name)
       }
 
       return {
         id: newId(),
         orderId,
-        dishId: found.dish.id,
-        dishName: found.dish.name,
+        dishId: dish.id,
+        dishName: dish.name,
         quantity: line.quantity,
-        color: toColor(found.color),
+        color: toColor(dish.color),
       }
     })
 
@@ -344,14 +343,13 @@ async function loadOrders(
   }
 
   // One query for all the lines, not one per order: the kitchen screen
-  // refetches on every event, and an N+1 would show there quickly. The two
-  // joins ride along for free and bring back the colour of each line's
-  // category - LEFT, because a deleted dish leaves the line standing.
+  // refetches on every event, and an N+1 would show there quickly. The join
+  // rides along for free and brings back each line's colour - LEFT, because
+  // a deleted dish leaves the line standing.
   const items = await db
-    .select({ item: orderItems, color: categories.color })
+    .select({ item: orderItems, color: dishes.color })
     .from(orderItems)
     .leftJoin(dishes, eq(dishes.id, orderItems.dishId))
-    .leftJoin(categories, eq(categories.id, dishes.categoryId))
     .where(
       inArray(
         orderItems.orderId,
@@ -395,6 +393,6 @@ async function loadOrders(
  * version of the application no longer knows. Both end up the same way - no
  * dot on the line - rather than as a class name that does not exist.
  */
-function toColor(value: string | null): CategoryColor | null {
-  return value !== null && isCategoryColor(value) ? value : null
+function toColor(value: string | null): DishColor | null {
+  return value !== null && isDishColor(value) ? value : null
 }

@@ -4,7 +4,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { CategoryBadge, CategoryColorPicker } from '#/components/category-color'
+import { DishColorPicker, DishDot } from '#/components/dish-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
@@ -27,7 +27,7 @@ import {
 } from '#/components/ui/select'
 import { Textarea } from '#/components/ui/textarea'
 import { useAppEvents } from '#/hooks/use-app-events'
-import { DEFAULT_CATEGORY_COLOR, type CategoryColor } from '#/lib/categories'
+import { DEFAULT_DISH_COLOR, type DishColor } from '#/lib/colors'
 import { m } from '#/paraglide/messages'
 import {
   createCategory,
@@ -47,13 +47,13 @@ type FormState = {
   name: string
   description: string
   categoryId: string
+  color: DishColor
   available: boolean
 }
 
 type CategoryFormState = {
   id: string | null
   name: string
-  color: CategoryColor
 }
 
 const EMPTY: FormState = {
@@ -61,13 +61,13 @@ const EMPTY: FormState = {
   name: '',
   description: '',
   categoryId: '',
+  color: DEFAULT_DISH_COLOR,
   available: true,
 }
 
 const EMPTY_CATEGORY: CategoryFormState = {
   id: null,
   name: '',
-  color: DEFAULT_CATEGORY_COLOR,
 }
 
 function DishesPage() {
@@ -110,6 +110,7 @@ function DishesPage() {
         name: state.name.trim(),
         description: state.description.trim(),
         categoryId: state.categoryId,
+        color: state.color,
         available: state.available,
       }
 
@@ -143,7 +144,7 @@ function DishesPage() {
 
   const saveCategory = useMutation({
     mutationFn: (state: CategoryFormState) => {
-      const payload = { name: state.name.trim(), color: state.color }
+      const payload = { name: state.name.trim() }
 
       return state.id
         ? updateCategory({ data: { ...payload, id: state.id } })
@@ -206,15 +207,13 @@ function DishesPage() {
                 key={category.id}
                 className="flex items-center gap-1 rounded-full border border-border/60 py-1 pr-1 pl-2"
               >
-                <CategoryBadge name={category.name} color={category.color} />
+                <Badge variant="outline">{category.name}</Badge>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="size-7"
                   aria-label={m.categories_edit_one({ category: category.name })}
-                  onClick={() =>
-                    setCategoryForm({ id: category.id, name: category.name, color: category.color })
-                  }
+                  onClick={() => setCategoryForm({ id: category.id, name: category.name })}
                 >
                   <Pencil className="size-3.5" aria-hidden />
                 </Button>
@@ -249,8 +248,9 @@ function DishesPage() {
             <CardContent className="flex items-start gap-3 py-4">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
+                  <DishDot color={dish.color} />
                   <span className="font-medium">{dish.name}</span>
-                  <CategoryBadge name={dish.category.name} color={dish.category.color} />
+                  <Badge variant="outline">{dish.category.name}</Badge>
                   {dish.available ? null : <Badge variant="secondary">{m.dishes_unavailable()}</Badge>}
                 </div>
                 {dish.description ? (
@@ -269,6 +269,7 @@ function DishesPage() {
                       name: dish.name,
                       description: dish.description ?? '',
                       categoryId: dish.category.id,
+                      color: dish.color,
                       available: dish.available,
                     })
                   }
@@ -341,11 +342,20 @@ function DishesPage() {
                   <SelectContent>
                     {sections.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
-                        <CategoryBadge name={category.name} color={category.color} />
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{m.dishes_color()}</Label>
+                <DishColorPicker
+                  value={form.color}
+                  disabled={save.isPending}
+                  onChange={(color) => setForm({ ...form, color })}
+                />
               </div>
 
               <label className="flex items-center gap-2 text-sm">
@@ -400,15 +410,6 @@ function DishesPage() {
                   onChange={(event) =>
                     setCategoryForm({ ...categoryForm, name: event.target.value })
                   }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{m.categories_color()}</Label>
-                <CategoryColorPicker
-                  value={categoryForm.color}
-                  disabled={saveCategory.isPending}
-                  onChange={(color) => setCategoryForm({ ...categoryForm, color })}
                 />
               </div>
 

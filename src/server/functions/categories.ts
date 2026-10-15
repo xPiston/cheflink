@@ -4,12 +4,6 @@ import { z } from 'zod'
 
 import { getDb } from '#/db/client'
 import { categories, dishes } from '#/db/schema'
-import {
-  CATEGORY_COLORS,
-  DEFAULT_CATEGORY_COLOR,
-  isCategoryColor,
-  type CategoryColor,
-} from '#/lib/categories'
 import { m } from '#/paraglide/messages'
 import { newId, requireUser } from '#/server/auth'
 import { publish } from '#/server/events'
@@ -17,8 +11,13 @@ import { publish } from '#/server/events'
 export type Category = {
   id: string
   name: string
-  color: CategoryColor
 }
+
+/**
+ * A category has no colour of its own: the colour is on the dish, so that two
+ * dishes of the same section can be told apart on sight. The `color` column
+ * still exists on this table and is on its way out - see src/db/schema.ts.
+ */
 
 /**
  * The validation messages are functions, not strings: Zod calls them at parse
@@ -31,12 +30,6 @@ const categoryInput = z.object({
     .trim()
     .min(1, { error: () => m.error_category_name_required() })
     .max(40),
-  /**
-   * An enum, so a colour the interface does not offer cannot reach the
-   * database. The palette is defined once in `src/lib/categories.ts` and this
-   * is the only place that guards the way in.
-   */
-  color: z.enum(CATEGORY_COLORS),
 })
 
 export class CategoryNotFoundError extends Error {
@@ -87,7 +80,7 @@ export const createCategory = createServerFn({ method: 'POST' })
 
     const [row] = await db
       .insert(categories)
-      .values({ id: newId(), name: data.name, color: data.color })
+      .values({ id: newId(), name: data.name })
       .returning()
 
     // The same event as a dish changing: for every screen that is open, a
@@ -107,7 +100,7 @@ export const updateCategory = createServerFn({ method: 'POST' })
 
     const [row] = await getDb()
       .update(categories)
-      .set({ name: data.name, color: data.color })
+      .set({ name: data.name })
       .where(eq(categories.id, data.id))
       .returning()
 
@@ -164,12 +157,5 @@ async function refuseDuplicateName(name: string, exceptId: string | null): Promi
 }
 
 function toCategory(row: typeof categories.$inferSelect): Category {
-  return {
-    id: row.id,
-    name: row.name,
-    // The column is plain text, so the palette is re-checked on the way out:
-    // a value written by an older version of the application, or by hand, must
-    // not reach a screen as a class name that does not exist.
-    color: isCategoryColor(row.color) ? row.color : DEFAULT_CATEGORY_COLOR,
-  }
+  return { id: row.id, name: row.name }
 }

@@ -24,27 +24,24 @@ import { hashPassword } from '../src/server/password.ts'
 const EMAIL = process.env.SEED_EMAIL ?? 'bar@exemple.fr'
 const PASSWORD = process.env.SEED_PASSWORD ?? 'motdepasse'
 
-/**
- * The demo card's sections, each with a colour.
- *
- * Coloured rather than left white, unlike the categories the migration
- * creates: a fresh install is somebody looking at the application for the
- * first time, and three white badges would show the feature switched off.
- * The tokens are the ones in src/lib/categories.ts.
- */
-const CATEGORIES: Array<[name: string, color: string]> = [
-  ['A partager', 'ambre'],
-  ['Plats', 'bleu'],
-  ['Desserts', 'rose'],
-]
+/** The demo card's sections. A category groups, it does not colour. */
+const CATEGORIES = ['A partager', 'Plats', 'Desserts']
 
-const DISHES: Array<[name: string, description: string, category: string]> = [
-  ['Planche mixte', 'Charcuterie, fromages, cornichons', 'A partager'],
-  ['Frites maison', 'Sauce au choix', 'A partager'],
-  ['Croque-monsieur', 'Jambon blanc, comte', 'Plats'],
-  ['Burger du bar', 'Steak 150 g, cheddar, oignons confits', 'Plats'],
-  ['Salade cesar', 'Poulet grille, parmesan', 'Plats'],
-  ['Moelleux au chocolat', 'Coeur coulant', 'Desserts'],
+/**
+ * The demo dishes, each with a colour.
+ *
+ * Coloured rather than left white, unlike the dishes the migration finds
+ * already on the card: a fresh install is somebody looking at the
+ * application for the first time, and six white dishes would show the
+ * feature switched off. The tokens are the ones in src/lib/colors.ts.
+ */
+const DISHES: Array<[name: string, description: string, category: string, color: string]> = [
+  ['Planche mixte', 'Charcuterie, fromages, cornichons', 'A partager', 'ambre'],
+  ['Frites maison', 'Sauce au choix', 'A partager', 'orange'],
+  ['Croque-monsieur', 'Jambon blanc, comte', 'Plats', 'bleu'],
+  ['Burger du bar', 'Steak 150 g, cheddar, oignons confits', 'Plats', 'rouge'],
+  ['Salade cesar', 'Poulet grille, parmesan', 'Plats', 'vert'],
+  ['Moelleux au chocolat', 'Coeur coulant', 'Desserts', 'rose'],
 ]
 
 const quote = (value: string) => `'${value.replaceAll("'", "''")}'`
@@ -59,24 +56,24 @@ const statements = [
     Date.now(),
   ].join(', ')});`,
   ...CATEGORIES.map(
-    ([name, color]) =>
-      `insert or ignore into categories (id, name, color, created_at) values (${[
+    (name) =>
+      `insert or ignore into categories (id, name, created_at) values (${[
         quote(crypto.randomUUID()),
         quote(name),
-        quote(color),
         Date.now(),
       ].join(', ')});`
   ),
   ...DISHES.map(
-    ([name, description, category]) =>
+    ([name, description, category, color]) =>
       // The category is looked up by name rather than by an id generated
       // here: on a second run the `insert or ignore` above changes nothing,
       // and an id from this run would point at a row that was never written.
-      `insert or ignore into dishes (id, name, description, category_id, available, created_at) values (${[
+      `insert or ignore into dishes (id, name, description, category_id, color, available, created_at) values (${[
         quote(crypto.randomUUID()),
         quote(name),
         quote(description),
         `(select id from categories where name = ${quote(category)})`,
+        quote(color),
         1,
         Date.now(),
       ].join(', ')});`

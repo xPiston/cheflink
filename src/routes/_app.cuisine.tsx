@@ -4,7 +4,7 @@ import { BellRing, Check, Clock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-import { CategoryDot } from '#/components/category-color'
+import { DishDot } from '#/components/dish-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -191,12 +191,12 @@ function KitchenPage() {
                     {order.lines.map((line) => (
                       <li key={line.id} className="flex items-center gap-2 text-base">
                         {/*
-                          The colour of its category, or a hole the same size:
-                          a line whose dish has since been deleted keeps its
-                          place in the column rather than shifting the others.
+                          The dish's colour, or a hole the same size: a line
+                          whose dish has since been deleted keeps its place in
+                          the column rather than shifting the others.
                         */}
                         {line.color ? (
-                          <CategoryDot color={line.color} />
+                          <DishDot color={line.color} />
                         ) : (
                           <span className="size-2.5 shrink-0" aria-hidden />
                         )}

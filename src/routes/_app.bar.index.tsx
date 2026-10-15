@@ -4,13 +4,14 @@ import { Minus, Plus, Send, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import { CategoryBadge } from '#/components/category-color'
+import { dishBarClass } from '#/components/dish-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { useAppEvents } from '#/hooks/use-app-events'
+import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 import { createOrder } from '#/server/functions/orders'
 import { listDishes, type Dish } from '#/server/functions/dishes'
@@ -61,6 +62,9 @@ function TakeOrderPage() {
    * dishes page, and the id is what says they are not the same section. The
    * server already sorts by category then by dish, so the order the groups
    * come out in is the order they go in.
+   *
+   * The section is a heading and nothing more - the colour is on each dish,
+   * which is what makes two dishes of the same section tellable apart.
    */
   const byCategory = useMemo(() => {
     const groups = new Map<string, { category: Dish['category']; dishes: Dish[] }>()
@@ -136,12 +140,12 @@ function TakeOrderPage() {
 
         {byCategory.map(({ category, dishes: items }) => (
           <div key={category.id} className="space-y-3">
-            <h2>
-              <CategoryBadge name={category.name} color={category.color} className="text-sm" />
+            <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              {category.name}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {items.map((dish) => (
-                <Card key={dish.id} className="gap-3 py-4">
+                <Card key={dish.id} className={cn('gap-3 py-4', dishBarClass(dish.color))}>
                   <CardContent className="flex items-start gap-3 px-4">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">{dish.name}</p>

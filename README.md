@@ -45,8 +45,9 @@ mode, and either can switch with one click.
 - 🔢 **Orders are numbered, not seated** — the counter sends, the kitchen
   calls out "#14". The counter restarts every service, which turns at five in
   the morning rather than at midnight
-- 🎨 **A colour per category** — chosen on the dishes page, shown on the
-  counter screen and as a dot on every line of the kitchen card
+- 🎨 **A colour per dish** — chosen on the dishes page, shown down the side of
+  the dish on the counter screen and as a dot on every line of the kitchen
+  card, so two dishes of the same section are told apart on sight
 - 🍔 **Menu editable mid-service** — create, edit, delete a dish or a
   category, or mark a dish unavailable without removing it
 - 📋 **Order history as a table** — a 24 h / 7 day / 30 day window, filterable
@@ -289,10 +290,10 @@ the start of service beats a chime you discover at 8pm has never worked.
 - **No notion of price.** The app carries orders to the kitchen, it doesn't take
   payment: the bill is settled at the till.
 - **Order lines copy the dish name** at send time. Renaming or deleting a dish
-  therefore never rewrites history. The category's **colour** is the opposite
+  therefore never rewrites history. The dish's **colour** is the opposite
   choice — read at display time, never copied — because it is a cue for the
-  cook looking at a card right now, and recolouring "Desserts" has to recolour
-  the card on the screen, not only the next order.
+  cook looking at a card right now, and recolouring a dish has to recolour the
+  card on the screen, not only the next order.
 - **The order's number is chosen by the `INSERT` itself.**
   `insert ... select max(number) + 1 where service_day = ?` is one statement,
   so two orders sent in the same breath come out 14 and 15. Reading the
@@ -307,11 +308,18 @@ the start of service beats a chime you discover at 8pm has never worked.
   "#1" mid-rush. Paris rather than the server's clock, because a Worker runs
   wherever Cloudflare put it and UTC would turn the day at two or three in the
   morning local time depending on the season.
-- **A category is a row, and its colour is a token.** Free text on the dish
-  made "Desserts" and "desserts" two sections of the same card, and left
-  nothing to hang a colour on. The colour is stored as `ambre`, not
-  `#f59e0b`: a hex is a fact about one theme, and this application has two —
-  each picks its own shade for the token.
+- **A category is a row; the colour is on the dish.** Free text on the dish
+  made "Desserts" and "desserts" two sections of the same card, so a category
+  became a row and the form a list. The colour sits one level down, on the
+  dish itself: a section tells you where to look, a colour tells the burger
+  from the cheeseburger. It is stored as `ambre`, not `#f59e0b` — a hex is a
+  fact about one theme, and this application has two, each picking its own
+  shade for the token.
+- **The column the colour replaced is still there, on purpose.** Dropping
+  `categories.color` in the same migration that adds `dishes.color` would
+  break the Worker still serving traffic, which reads it, for as long as the
+  deployment takes. Expand now, contract in a later release: it costs one
+  extra migration and no downtime.
 - **The name shown in the kitchen is read from the database server-side**, never
   taken from the browser. The client only sends ids and quantities.
 - **Completing an order is idempotent.** The `WHERE` clause is on

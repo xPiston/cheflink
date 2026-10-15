@@ -29,6 +29,13 @@
       "when": 1792063275128,
       "tag": "0003_category_colors",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792065519427,
+      "tag": "0004_dish_colors",
+      "breakpoints": true
     }
   ]
 }

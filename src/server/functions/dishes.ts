@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { getDb } from '#/db/client'
 import { categories, dishes } from '#/db/schema'
-import { DEFAULT_CATEGORY_COLOR, isCategoryColor } from '#/lib/categories'
+import { DEFAULT_DISH_COLOR, DISH_COLORS, isDishColor, type DishColor } from '#/lib/colors'
 import { m } from '#/paraglide/messages'
 import { newId, requireUser } from '#/server/auth'
 import { publish } from '#/server/events'
@@ -15,6 +15,8 @@ export type Dish = {
   name: string
   description: string | null
   category: Category
+  /** How it is drawn on the counter screen and in the kitchen. */
+  color: DishColor
   available: boolean
 }
 
@@ -41,6 +43,12 @@ const dishInput = z.object({
    * so no dish gets written without one from here.
    */
   categoryId: z.string().uuid({ error: () => m.error_dish_category_required() }),
+  /**
+   * An enum, so a colour the interface does not offer cannot reach the
+   * database. The palette is defined once in `src/lib/colors.ts` and this is
+   * the only place that guards the way in.
+   */
+  color: z.enum(DISH_COLORS),
   available: z.boolean(),
 })
 
@@ -74,6 +82,7 @@ export const createDish = createServerFn({ method: 'POST' })
         name: data.name,
         description: data.description || null,
         categoryId: category.id,
+        color: data.color,
         available: data.available,
       })
       .returning()
@@ -110,6 +119,7 @@ export const updateDish = createServerFn({ method: 'POST' })
         name: data.name,
         description: data.description || null,
         categoryId: category.id,
+        color: data.color,
         available: data.available,
       })
       .where(eq(dishes.id, data.id))
@@ -163,18 +173,21 @@ async function requireCategory(categoryId: string): Promise<Category> {
     throw new CategoryNotFoundError(categoryId)
   }
 
-  return {
-    id: row.id,
-    name: row.name,
-    color: isCategoryColor(row.color) ? row.color : DEFAULT_CATEGORY_COLOR,
-  }
+  return { id: row.id, name: row.name }
 }
 
-function toDish(row: typeof dishes.$inferSelect, category: typeof categories.$inferSelect | Category | null): Dish {
+function toDish(
+  row: typeof dishes.$inferSelect,
+  category: typeof categories.$inferSelect | Category | null
+): Dish {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
+    // The column is plain text, so the palette is re-checked on the way out:
+    // a value written by an older version of the application, or by hand,
+    // must not reach a screen as a class name that does not exist.
+    color: isDishColor(row.color) ? row.color : DEFAULT_DISH_COLOR,
     /**
      * A dish with no category keeps a placeholder rather than a null, so that
      * every screen can write `dish.category.name` without a guard. The empty
@@ -182,12 +195,8 @@ function toDish(row: typeof dishes.$inferSelect, category: typeof categories.$in
      * selected and will not save until one is chosen, which is the repair.
      */
     category: category
-      ? {
-          id: category.id,
-          name: category.name,
-          color: isCategoryColor(category.color) ? category.color : DEFAULT_CATEGORY_COLOR,
-        }
-      : { id: '', name: m.dishes_no_category(), color: DEFAULT_CATEGORY_COLOR },
+      ? { id: category.id, name: category.name }
+      : { id: '', name: m.dishes_no_category() },
     available: row.available,
   }
 }

@@ -33,20 +33,25 @@ export const sessions = sqliteTable(
 )
 
 /**
- * A section of the card - "Plats", "Desserts" - and its colour.
+ * A section of the card - "Plats", "Desserts".
  *
- * A table rather than the free text it used to be on the dish, because the
- * colour belongs to the CATEGORY: recolouring "Desserts" has to move every
- * dessert at once, and with the name copied onto each dish there would be
- * nothing to recolour. The name is unique for the same reason - two rows
- * called "Desserts" in two different colours is the state this table exists
- * to make impossible.
- *
- * The colour is a token, never a hex: see src/lib/categories.ts.
+ * A table rather than the free text it used to be on the dish: typed by hand,
+ * "Desserts" and "desserts" were two sections of the same card. The name is
+ * unique, which is the whole point of having rows.
  */
 export const categories = sqliteTable('categories', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
+  /**
+   * Retired, and still here on purpose.
+   *
+   * The colour moved to the dish (see `dishes.color` below). Dropping the
+   * column in the same migration that adds the new one would break the
+   * running Worker for as long as the deployment takes - it still reads this
+   * one - so the column is left in place for this release and removed by a
+   * follow-up migration, once no deployed code looks at it. Nothing reads it
+   * from here on.
+   */
   color: text('color').notNull().default('blanc'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
@@ -70,6 +75,16 @@ export const dishes = sqliteTable(
      * the validator: see src/server/functions/dishes.ts.
      */
     categoryId: text('category_id').references(() => categories.id),
+    /**
+     * How the dish is coloured on the counter screen and in the kitchen.
+     *
+     * A token - `ambre`, never `#f59e0b` - because a hex is a fact about one
+     * theme and this application has two. The list lives in src/lib/colors.ts
+     * and nothing but a validator writes here, so the column is plain text
+     * with a default rather than a second table: a colour has no identity,
+     * nothing points at it, and nothing would ever join on it.
+     */
+    color: text('color').notNull().default('blanc'),
     /** A dish pulled from today's menu can be ordered again tomorrow. */
     available: integer('available', { mode: 'boolean' }).notNull().default(true),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
