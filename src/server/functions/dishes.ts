@@ -3,16 +3,18 @@ import { asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { getDb } from '#/db/client'
-import { dishes } from '#/db/schema'
+import { categories, dishes } from '#/db/schema'
+import { DEFAULT_CATEGORY_COLOR, isCategoryColor } from '#/lib/categories'
 import { m } from '#/paraglide/messages'
 import { newId, requireUser } from '#/server/auth'
 import { publish } from '#/server/events'
+import { CategoryNotFoundError, type Category } from '#/server/functions/categories'
 
 export type Dish = {
   id: string
   name: string
   description: string | null
-  category: string
+  category: Category
   available: boolean
 }
 
@@ -33,11 +35,12 @@ const dishInput = z.object({
     .min(1, { error: () => m.error_dish_name_required() })
     .max(80),
   description: z.string().trim().max(240).optional().or(z.literal('')),
-  category: z
-    .string()
-    .trim()
-    .min(1, { error: () => m.error_dish_category_required() })
-    .max(40),
+  /**
+   * The category is now a reference, and this is what keeps `category_id`
+   * effectively NOT NULL: SQLite could not be told to (see src/db/schema.ts),
+   * so no dish gets written without one from here.
+   */
+  categoryId: z.string().uuid({ error: () => m.error_dish_category_required() }),
   available: z.boolean(),
 })
 
@@ -45,11 +48,15 @@ export const listDishes = createServerFn({ method: 'GET' }).handler(async (): Pr
   await requireUser()
 
   const rows = await getDb()
-    .select()
+    .select({ dish: dishes, category: categories })
     .from(dishes)
-    .orderBy(asc(dishes.category), asc(dishes.name))
+    // A LEFT join, although the application never writes a dish without a
+    // category: an inner one would make such a dish disappear from the only
+    // screen that could repair it. See `toDish`.
+    .leftJoin(categories, eq(categories.id, dishes.categoryId))
+    .orderBy(asc(categories.name), asc(dishes.name))
 
-  return rows.map(toDish)
+  return rows.map((row) => toDish(row.dish, row.category))
 })
 
 export const createDish = createServerFn({ method: 'POST' })
@@ -57,20 +64,23 @@ export const createDish = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<Dish> => {
     await requireUser()
 
-    const [row] = await getDb()
+    const db = getDb()
+    const category = await requireCategory(data.categoryId)
+
+    const [row] = await db
       .insert(dishes)
       .values({
         id: newId(),
         name: data.name,
         description: data.description || null,
-        category: data.category,
+        categoryId: category.id,
         available: data.available,
       })
       .returning()
 
     await publish({ type: 'dishes.changed' })
 
-    return toDish(row)
+    return toDish(row, category)
   })
 
 /**
@@ -92,12 +102,14 @@ export const updateDish = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<Dish> => {
     await requireUser()
 
+    const category = await requireCategory(data.categoryId)
+
     const [row] = await getDb()
       .update(dishes)
       .set({
         name: data.name,
         description: data.description || null,
-        category: data.category,
+        categoryId: category.id,
         available: data.available,
       })
       .where(eq(dishes.id, data.id))
@@ -109,7 +121,7 @@ export const updateDish = createServerFn({ method: 'POST' })
 
     await publish({ type: 'dishes.changed' })
 
-    return toDish(row)
+    return toDish(row, category)
   })
 
 /**
@@ -134,12 +146,48 @@ export const deleteDish = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
-function toDish(row: typeof dishes.$inferSelect): Dish {
+/**
+ * The category a dish is about to point at, or a refusal.
+ *
+ * Checked rather than trusted: the id comes from the browser, and a dangling
+ * one would otherwise be written and only noticed on the screen that reads it.
+ */
+async function requireCategory(categoryId: string): Promise<Category> {
+  const [row] = await getDb()
+    .select()
+    .from(categories)
+    .where(eq(categories.id, categoryId))
+    .limit(1)
+
+  if (!row) {
+    throw new CategoryNotFoundError(categoryId)
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    color: isCategoryColor(row.color) ? row.color : DEFAULT_CATEGORY_COLOR,
+  }
+}
+
+function toDish(row: typeof dishes.$inferSelect, category: typeof categories.$inferSelect | Category | null): Dish {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
-    category: row.category,
+    /**
+     * A dish with no category keeps a placeholder rather than a null, so that
+     * every screen can write `dish.category.name` without a guard. The empty
+     * id is what makes it recognisable: the edit dialog opens with no category
+     * selected and will not save until one is chosen, which is the repair.
+     */
+    category: category
+      ? {
+          id: category.id,
+          name: category.name,
+          color: isCategoryColor(category.color) ? category.color : DEFAULT_CATEGORY_COLOR,
+        }
+      : { id: '', name: m.dishes_no_category(), color: DEFAULT_CATEGORY_COLOR },
     available: row.available,
   }
 }

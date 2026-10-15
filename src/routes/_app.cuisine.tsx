@@ -4,6 +4,7 @@ import { BellRing, Check, Clock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { CategoryDot } from '#/components/category-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -162,7 +163,7 @@ function KitchenPage() {
               type="button"
               onClick={() => complete.mutate(order.id)}
               className="text-left"
-              aria-label={m.kitchen_mark_ready({ table: order.tableLabel })}
+              aria-label={m.kitchen_mark_ready({ number: order.number })}
             >
               <Card
                 className={cn(
@@ -172,7 +173,9 @@ function KitchenPage() {
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between gap-2">
-                    <span className="truncate text-lg">{order.tableLabel}</span>
+                    <span className="truncate text-lg tabular-nums">
+                      {m.order_number({ number: order.number })}
+                    </span>
                     <Badge
                       variant={level === 'tres_presse' ? 'destructive' : 'secondary'}
                       className="gap-1 shrink-0"
@@ -186,7 +189,17 @@ function KitchenPage() {
                 <CardContent className="space-y-3">
                   <ul className="space-y-1">
                     {order.lines.map((line) => (
-                      <li key={line.id} className="flex gap-2 text-base">
+                      <li key={line.id} className="flex items-center gap-2 text-base">
+                        {/*
+                          The colour of its category, or a hole the same size:
+                          a line whose dish has since been deleted keeps its
+                          place in the column rather than shifting the others.
+                        */}
+                        {line.color ? (
+                          <CategoryDot color={line.color} />
+                        ) : (
+                          <span className="size-2.5 shrink-0" aria-hidden />
+                        )}
                         <span className="w-7 shrink-0 font-semibold tabular-nums">
                           {line.quantity}x
                         </span>

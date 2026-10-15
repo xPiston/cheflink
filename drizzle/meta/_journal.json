@@ -22,6 +22,13 @@
       "when": 1791467969385,
       "tag": "0002_cancelled_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792063275128,
+      "tag": "0003_category_colors",
+      "breakpoints": true
     }
   ]
 }

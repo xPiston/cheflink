@@ -166,7 +166,7 @@ function HistoryPage() {
     mutationFn: (orderId: string) => cancelOrder({ data: { id: orderId } }),
     onSuccess: (order) => {
       setCancelling(null)
-      toast.success(m.history_cancel_done({ table: order.tableLabel }))
+      toast.success(m.history_cancel_done({ number: order.number }))
     },
     // No optimistic update here, deliberately. The row is not disappearing
     // under the finger - it stays, with a different badge - and the one thing
@@ -181,18 +181,27 @@ function HistoryPage() {
   const columns = useMemo<ColumnDef<typeof features, OrderView>[]>(
     () => [
       {
-        accessorKey: 'tableLabel',
-        header: m.history_col_table(),
+        id: 'number',
+        /*
+         * The accessor is the printed form, "#14", so that typing 14 in the
+         * search box finds it. Sorting is told to use the number itself: left
+         * to compare text, #10 would come before #2.
+         */
+        accessorFn: (order: OrderView) => m.order_number({ number: order.number }),
+        header: m.history_col_number(),
+        sortFn: (a, b) => a.original.number - b.original.number,
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="font-medium">{row.original.tableLabel}</p>
+            <p className="font-medium tabular-nums">
+              {m.order_number({ number: row.original.number })}
+            </p>
             {/*
               The note often carries an allergy. It stays on the row rather
               than behind a click: a history is also how you check what was
               asked for when a customer comes back about it.
             */}
             {row.original.note ? (
-              // Prefixed rather than bare: a loose line under a table name
+              // Prefixed rather than bare: a loose line under a number
               // could be anything, and this one is often an allergy.
               <p className="text-xs text-muted-foreground">
                 {m.history_note({ note: row.original.note })}
@@ -312,7 +321,7 @@ function HistoryPage() {
               variant="outline"
               size="sm"
               onClick={() => setCancelling(row.original)}
-              aria-label={m.history_cancel_order({ table: row.original.tableLabel })}
+              aria-label={m.history_cancel_order({ number: row.original.number })}
             >
               <X className="size-4" aria-hidden />
               {m.history_cancel()}
@@ -488,7 +497,7 @@ function HistoryPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {m.history_cancel_title({ table: cancelling?.tableLabel ?? '' })}
+              {m.history_cancel_title({ number: cancelling?.number ?? 0 })}
             </DialogTitle>
             <DialogDescription>{m.history_cancel_warning()}</DialogDescription>
           </DialogHeader>

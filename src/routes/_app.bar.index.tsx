@@ -4,10 +4,10 @@ import { Minus, Plus, Send, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { CategoryBadge } from '#/components/category-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
-import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { useAppEvents } from '#/hooks/use-app-events'
@@ -23,9 +23,17 @@ type Draft = Record<string, number>
 
 function TakeOrderPage() {
   const queryClient = useQueryClient()
-  const [tableLabel, setTableLabel] = useState('')
   const [note, setNote] = useState('')
   const [draft, setDraft] = useState<Draft>({})
+  /**
+   * The number of the last order sent from this station, or none yet.
+   *
+   * The toast says it too, but a toast is gone in four seconds and this is
+   * the number somebody has to call out, write on a ticket, or repeat to a
+   * customer who asks. So it stays on the screen until the next one replaces
+   * it.
+   */
+  const [lastNumber, setLastNumber] = useState<number | null>(null)
 
   const dishes = useQuery({ queryKey: ['dishes'], queryFn: () => listDishes() })
 
@@ -45,13 +53,24 @@ function TakeOrderPage() {
     [dishes.data]
   )
 
+  /**
+   * The menu, in sections.
+   *
+   * Grouped on the category's id rather than its name: two categories can be
+   * renamed into each other for a second while somebody is typing on the
+   * dishes page, and the id is what says they are not the same section. The
+   * server already sorts by category then by dish, so the order the groups
+   * come out in is the order they go in.
+   */
   const byCategory = useMemo(() => {
-    const groups = new Map<string, Dish[]>()
+    const groups = new Map<string, { category: Dish['category']; dishes: Dish[] }>()
     for (const dish of available) {
-      groups.set(dish.category, [...(groups.get(dish.category) ?? []), dish])
+      const group = groups.get(dish.category.id) ?? { category: dish.category, dishes: [] }
+      group.dishes.push(dish)
+      groups.set(dish.category.id, group)
     }
 
-    return [...groups.entries()]
+    return [...groups.values()]
   }, [available])
 
   const lines = useMemo(
@@ -72,16 +91,15 @@ function TakeOrderPage() {
     mutationFn: () =>
       createOrder({
         data: {
-          tableLabel: tableLabel.trim(),
           note: note.trim(),
           lines: lines.map((line) => ({ dishId: line.dish.id, quantity: line.quantity })),
         },
       }),
     onSuccess: (order) => {
-      toast.success(m.order_sent({ table: order.tableLabel }))
+      toast.success(m.order_sent({ number: order.number }))
+      setLastNumber(order.number)
       setDraft({})
       setNote('')
-      setTableLabel('')
       void queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
     onError: () => toast.error(m.order_send_failed()),
@@ -101,7 +119,7 @@ function TakeOrderPage() {
       return copy
     })
 
-  const canSend = lines.length > 0 && tableLabel.trim().length > 0 && !send.isPending
+  const canSend = lines.length > 0 && !send.isPending
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
@@ -116,10 +134,10 @@ function TakeOrderPage() {
           <p className="text-sm text-muted-foreground">{m.order_no_dish_available()}</p>
         ) : null}
 
-        {byCategory.map(([category, items]) => (
-          <div key={category} className="space-y-3">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              {category}
+        {byCategory.map(({ category, dishes: items }) => (
+          <div key={category.id} className="space-y-3">
+            <h2>
+              <CategoryBadge name={category.name} color={category.color} className="text-sm" />
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {items.map((dish) => (
@@ -170,16 +188,6 @@ function TakeOrderPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="table">{m.order_table()}</Label>
-              <Input
-                id="table"
-                placeholder={m.order_table_placeholder()}
-                value={tableLabel}
-                onChange={(event) => setTableLabel(event.target.value)}
-              />
-            </div>
-
             {lines.length === 0 ? (
               <p className="text-sm text-muted-foreground">{m.order_basket_empty()}</p>
             ) : (
@@ -219,9 +227,15 @@ function TakeOrderPage() {
               {send.isPending ? m.order_sending() : m.order_send()}
             </Button>
 
-            {lines.length > 0 && tableLabel.trim().length === 0 ? (
-              <p className="text-center text-xs text-muted-foreground">{m.order_need_table()}</p>
-            ) : null}
+            {/*
+              No table to fill in any more: the order is numbered as it lands,
+              and the number comes back here so the counter can call it out.
+            */}
+            {lastNumber === null ? null : (
+              <p className="text-center text-sm text-muted-foreground">
+                {m.order_last_sent({ number: lastNumber })}
+              </p>
+            )}
           </CardContent>
         </Card>
       </aside>

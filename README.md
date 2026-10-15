@@ -12,7 +12,7 @@ On Cloudflare, within the free plan.
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 [![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
-[![Tests](https://img.shields.io/badge/tests-23%20passing-22C55E)](#-tests)
+[![Tests](https://img.shields.io/badge/tests-37%20passing-22C55E)](#-tests)
 [![Deploy](https://img.shields.io/badge/deploy-on%20push%20to%20main-22C55E?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -42,10 +42,15 @@ mode, and either can switch with one click.
   reload, and the tablet rings
 - 👆 **One tap means ready** — the whole card is the button, and the update is
   optimistic
-- 🍔 **Menu editable mid-service** — create, edit, delete a dish, or mark it
-  unavailable without removing it
+- 🔢 **Orders are numbered, not seated** — the counter sends, the kitchen
+  calls out "#14". The counter restarts every service, which turns at five in
+  the morning rather than at midnight
+- 🎨 **A colour per category** — chosen on the dishes page, shown on the
+  counter screen and as a dot on every line of the kitchen card
+- 🍔 **Menu editable mid-service** — create, edit, delete a dish or a
+  category, or mark a dish unavailable without removing it
 - 📋 **Order history as a table** — a 24 h / 7 day / 30 day window, filterable
-  by status, searchable by table or dish, sortable on when it was sent, when
+  by status, searchable by number or dish, sortable on when it was sent, when
   it closed and how long the kitchen took
 - ↩️ **Cancel an order** — the table left, or it was never meant to be sent: the
   bar takes it back and the kitchen card disappears at once
@@ -59,8 +64,8 @@ mode, and either can switch with one click.
   device and resolved **server-side**, so the first HTML is already in the
   right language
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
-- ✅ **23 tests** on the business rules and the message catalogues, with no
-  database and no browser
+- ✅ **37 tests** on the business rules, the colour palette and the message
+  catalogues, with no database and no browser
 
 | | |
 | :--: | :--: |
@@ -68,6 +73,10 @@ mode, and either can switch with one click.
 | **Order taking** — menu, basket, note | **History** — windows, search, sorting |
 | <img src="docs/screenshots/plats.jpg" alt="Dish management: name, category, availability"> | <img src="docs/screenshots/plat-edition.jpg" alt="The new-dish dialog: name, description, category and availability"> |
 | **Dishes** — the menu, editable mid-service | **Editing** — name, category, availability |
+
+> The screenshots were taken before orders stopped carrying a table label:
+> where they show a "Table" field, the application now shows the order's
+> number. Nothing else about the layout has moved.
 
 <div align="center">
 <img src="docs/screenshots/cuisine-tablette.jpg" alt="Kitchen screen on a portrait tablet: one column, full-width cards" width="45%">
@@ -280,7 +289,29 @@ the start of service beats a chime you discover at 8pm has never worked.
 - **No notion of price.** The app carries orders to the kitchen, it doesn't take
   payment: the bill is settled at the till.
 - **Order lines copy the dish name** at send time. Renaming or deleting a dish
-  therefore never rewrites history.
+  therefore never rewrites history. The category's **colour** is the opposite
+  choice — read at display time, never copied — because it is a cue for the
+  cook looking at a card right now, and recolouring "Desserts" has to recolour
+  the card on the screen, not only the next order.
+- **The order's number is chosen by the `INSERT` itself.**
+  `insert ... select max(number) + 1 where service_day = ?` is one statement,
+  so two orders sent in the same breath come out 14 and 15. Reading the
+  maximum first and inserting after — the obvious version — hands both of them
+  14, and the kitchen gets two cards with the same name on the night it
+  matters. A unique index on `(service_day, number)` is the second half of the
+  argument: if that ever stops being one statement, it fails loudly instead of
+  quietly.
+- **A service is not a calendar day.** The counter turns over at five in the
+  morning, Paris time: a bar closing at two is still in the same service at
+  one, and a counter resetting at midnight would send the kitchen a second
+  "#1" mid-rush. Paris rather than the server's clock, because a Worker runs
+  wherever Cloudflare put it and UTC would turn the day at two or three in the
+  morning local time depending on the season.
+- **A category is a row, and its colour is a token.** Free text on the dish
+  made "Desserts" and "desserts" two sections of the same card, and left
+  nothing to hang a colour on. The colour is stored as `ambre`, not
+  `#f59e0b`: a hex is a fact about one theme, and this application has two —
+  each picks its own shade for the token.
 - **The name shown in the kitchen is read from the database server-side**, never
   taken from the browser. The client only sends ids and quantities.
 - **Completing an order is idempotent.** The `WHERE` clause is on

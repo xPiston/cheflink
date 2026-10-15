@@ -24,6 +24,20 @@ import { hashPassword } from '../src/server/password.ts'
 const EMAIL = process.env.SEED_EMAIL ?? 'bar@exemple.fr'
 const PASSWORD = process.env.SEED_PASSWORD ?? 'motdepasse'
 
+/**
+ * The demo card's sections, each with a colour.
+ *
+ * Coloured rather than left white, unlike the categories the migration
+ * creates: a fresh install is somebody looking at the application for the
+ * first time, and three white badges would show the feature switched off.
+ * The tokens are the ones in src/lib/categories.ts.
+ */
+const CATEGORIES: Array<[name: string, color: string]> = [
+  ['A partager', 'ambre'],
+  ['Plats', 'bleu'],
+  ['Desserts', 'rose'],
+]
+
 const DISHES: Array<[name: string, description: string, category: string]> = [
   ['Planche mixte', 'Charcuterie, fromages, cornichons', 'A partager'],
   ['Frites maison', 'Sauce au choix', 'A partager'],
@@ -44,13 +58,25 @@ const statements = [
     quote(await hashPassword(PASSWORD)),
     Date.now(),
   ].join(', ')});`,
+  ...CATEGORIES.map(
+    ([name, color]) =>
+      `insert or ignore into categories (id, name, color, created_at) values (${[
+        quote(crypto.randomUUID()),
+        quote(name),
+        quote(color),
+        Date.now(),
+      ].join(', ')});`
+  ),
   ...DISHES.map(
     ([name, description, category]) =>
-      `insert or ignore into dishes (id, name, description, category, available, created_at) values (${[
+      // The category is looked up by name rather than by an id generated
+      // here: on a second run the `insert or ignore` above changes nothing,
+      // and an id from this run would point at a row that was never written.
+      `insert or ignore into dishes (id, name, description, category_id, available, created_at) values (${[
         quote(crypto.randomUUID()),
         quote(name),
         quote(description),
-        quote(category),
+        `(select id from categories where name = ${quote(category)})`,
         1,
         Date.now(),
       ].join(', ')});`

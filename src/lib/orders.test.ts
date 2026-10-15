@@ -9,6 +9,7 @@ import {
   isOrderStatus,
   mergeLines,
   periodStart,
+  serviceDay,
   urgency,
   waitingMinutes,
 } from './orders'
@@ -145,5 +146,49 @@ describe('fenetres de l historique', () => {
   it('compte les jours pleins pour les deux autres', () => {
     expect(periodStart('7d', now).toISOString()).toBe('2026-10-02T01:30:00.000Z')
     expect(periodStart('30d', now).toISOString()).toBe('2026-09-09T01:30:00.000Z')
+  })
+})
+
+/**
+ * Le service, et pas le jour civil.
+ *
+ * Les dates d entree sont en UTC - c est l heure qu a un Worker Cloudflare -
+ * et la regle, elle, se lit a Paris. C est tout l interet de ces cas : ils
+ * passent par les deux changements d heure.
+ */
+describe('journee de service', () => {
+  it('rattache l apres-midi au jour meme', () => {
+    expect(serviceDay(new Date('2026-10-15T12:00:00Z'))).toBe('2026-10-15')
+  })
+
+  it('rattache la nuit au service de la veille', () => {
+    // 01h30 a Paris : le bar ferme a deux heures, c est encore le 14.
+    expect(serviceDay(new Date('2026-10-14T23:30:00Z'))).toBe('2026-10-14')
+  })
+
+  it('bascule a cinq heures du matin, pas a minuit', () => {
+    // Minuit pile a Paris. Le piege est la : sans hourCycle h23, Intl
+    // formate minuit en "24" et la commande partirait au lendemain.
+    expect(serviceDay(new Date('2026-10-14T22:00:00Z'))).toBe('2026-10-14')
+    // 04h59 a Paris, toujours le service de la veille.
+    expect(serviceDay(new Date('2026-10-15T02:59:00Z'))).toBe('2026-10-14')
+    // 05h00 a Paris, le compteur repart.
+    expect(serviceDay(new Date('2026-10-15T03:00:00Z'))).toBe('2026-10-15')
+  })
+
+  it('suit l heure de Paris et pas celle du serveur', () => {
+    // Memes 02h30 UTC, de part et d autre du changement d heure : en ete
+    // c est 04h30 a Paris (service de la veille), en hiver 03h30 (idem),
+    // mais a 03h30 UTC l ete il est 05h30 et la journee a tourne.
+    expect(serviceDay(new Date('2026-07-01T02:30:00Z'))).toBe('2026-06-30')
+    expect(serviceDay(new Date('2026-01-01T02:30:00Z'))).toBe('2025-12-31')
+    expect(serviceDay(new Date('2026-07-01T03:30:00Z'))).toBe('2026-07-01')
+    // L hiver, 03h30 UTC ne fait que 04h30 a Paris : encore la veille.
+    expect(serviceDay(new Date('2026-01-01T03:30:00Z'))).toBe('2025-12-31')
+  })
+
+  it('passe les fins de mois et d annee', () => {
+    expect(serviceDay(new Date('2026-03-01T01:00:00Z'))).toBe('2026-02-28')
+    expect(serviceDay(new Date('2027-01-01T02:00:00Z'))).toBe('2026-12-31')
   })
 })

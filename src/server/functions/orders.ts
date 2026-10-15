@@ -1,9 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, gte, inArray, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { getDb } from '#/db/client'
-import { dishes, orderItems, orders } from '#/db/schema'
+import { categories, dishes, orderItems, orders } from '#/db/schema'
+import { isCategoryColor, type CategoryColor } from '#/lib/categories'
 import {
   DEFAULT_HISTORY_PERIOD,
   HISTORY_PERIODS,
@@ -13,6 +14,7 @@ import {
   isOrderStatus,
   mergeLines,
   periodStart,
+  serviceDay,
   type OrderStatus,
 } from '#/lib/orders'
 import { m } from '#/paraglide/messages'
@@ -23,11 +25,25 @@ export type OrderLineView = {
   id: string
   dishName: string
   quantity: number
+  /**
+   * The colour of the dish's category, read NOW rather than copied when the
+   * order was sent - the opposite choice to `dishName` just above, and on
+   * purpose. The name is copied because the history must keep saying what was
+   * served even after the dish is renamed or pulled. The colour is a cue for
+   * the cook looking at a card that is on the screen this minute: recolouring
+   * "Desserts" has to recolour the card, not the next order only.
+   *
+   * Null when the dish has since been deleted - the line then shows its name
+   * and no dot, which is exactly what it is: something that was served and is
+   * no longer on the card.
+   */
+  color: CategoryColor | null
 }
 
 export type OrderView = {
   id: string
-  tableLabel: string
+  /** What the kitchen calls out. Unique within its service, not for ever. */
+  number: number
   note: string | null
   status: OrderStatus
   createdAt: number
@@ -42,11 +58,6 @@ export type OrderView = {
  * whoever sent the order. See the note in `dishes.ts`.
  */
 const createOrderInput = z.object({
-  tableLabel: z
-    .string()
-    .trim()
-    .min(1, { error: () => m.error_table_required() })
-    .max(40),
   note: z.string().trim().max(240).optional().or(z.literal('')),
   lines: z
     .array(z.object({ dishId: z.string().uuid(), quantity: z.number().int().min(1).max(99) }))
@@ -62,6 +73,9 @@ const createOrderInput = z.object({
  *     in the kitchen comes from it;
  *   - everything happens in ONE atomic write. A half-written order would show
  *     up in the kitchen with half its dishes.
+ *
+ * And the number the kitchen will call out is computed by the INSERT itself -
+ * see below, it is the part of this function worth reading twice.
  */
 export const createOrder = createServerFn({ method: 'POST' })
   .validator(createOrderInput)
@@ -71,8 +85,9 @@ export const createOrder = createServerFn({ method: 'POST' })
     const db = getDb()
     const merged = mergeLines(data.lines)
     const rows = await db
-      .select()
+      .select({ dish: dishes, color: categories.color })
       .from(dishes)
+      .leftJoin(categories, eq(categories.id, dishes.categoryId))
       .where(
         inArray(
           dishes.id,
@@ -80,27 +95,65 @@ export const createOrder = createServerFn({ method: 'POST' })
         )
       )
 
-    const byId = new Map(rows.map((row) => [row.id, row]))
+    const byId = new Map(rows.map((row) => [row.dish.id, row]))
     const orderId = newId()
     const now = new Date()
+    const day = serviceDay(now)
 
     const lines = merged.map((line) => {
-      const dish = byId.get(line.dishId)
-      if (!dish) {
+      const found = byId.get(line.dishId)
+      if (!found) {
         throw new UnavailableDishError(line.dishId)
       }
-      if (!dish.available) {
-        throw new UnavailableDishError(dish.name)
+      if (!found.dish.available) {
+        throw new UnavailableDishError(found.dish.name)
       }
 
       return {
         id: newId(),
         orderId,
-        dishId: dish.id,
-        dishName: dish.name,
+        dishId: found.dish.id,
+        dishName: found.dish.name,
         quantity: line.quantity,
+        color: toColor(found.color),
       }
     })
+
+    /**
+     * The number is chosen by the database, inside the INSERT.
+     *
+     * `insert ... select max(number) + 1 from orders where service_day = ?`
+     * is ONE statement, so SQLite does the reading and the writing without
+     * letting anything in between: two orders sent in the same breath come out
+     * as 14 and 15. Reading the maximum first and inserting after - the
+     * obvious version - would hand both of them 14, and the kitchen would get
+     * two cards with the same name on the night it matters.
+     *
+     * The unique index on (service_day, number) is the second half of the
+     * argument: if this ever stops being one statement, it fails loudly
+     * instead of quietly.
+     */
+    const insertOrder = db
+      .insert(orders)
+      .select(
+        db
+          .select({
+            id: sql<string>`${orderId}`.as('id'),
+            number: sql<number>`coalesce(max(${orders.number}), 0) + 1`.as('number'),
+            serviceDay: sql<string>`${day}`.as('service_day'),
+            note: sql<string | null>`${data.note || null}`.as('note'),
+            status: sql<string>`${ORDER_STATUS.Pending}`.as('status'),
+            createdBy: sql<string>`${user.id}`.as('created_by'),
+            createdAt: sql<number>`${now.getTime()}`.as('created_at'),
+            // Drizzle checks an insert-select against the whole table, in
+            // order: these two are null at birth, but they have to be said.
+            completedAt: sql<number | null>`null`.as('completed_at'),
+            cancelledAt: sql<number | null>`null`.as('cancelled_at'),
+          })
+          .from(orders)
+          .where(eq(orders.serviceDay, day))
+      )
+      .returning({ number: orders.number })
 
     /**
      * `batch` rather than a transaction: D1 exposes no BEGIN/COMMIT to the
@@ -108,29 +161,24 @@ export const createOrder = createServerFn({ method: 'POST' })
      * exactly what is needed here - a half-written order would show up in the
      * kitchen with half its dishes.
      */
-    await db.batch([
-      db.insert(orders).values({
-        id: orderId,
-        tableLabel: data.tableLabel,
-        note: data.note || null,
-        status: ORDER_STATUS.Pending,
-        createdBy: user.id,
-        createdAt: now,
-      }),
-      db.insert(orderItems).values(lines),
+    const [numbered] = await db.batch([
+      insertOrder,
+      db.insert(orderItems).values(
+        lines.map(({ color: _color, ...item }) => item)
+      ),
     ])
 
     await publish({ type: 'order.created', orderId })
 
     return {
       id: orderId,
-      tableLabel: data.tableLabel,
+      number: numbered[0]?.number ?? 0,
       note: data.note || null,
       status: ORDER_STATUS.Pending,
       createdAt: now.getTime(),
       completedAt: null,
       cancelledAt: null,
-      lines: lines.map(({ id, dishName, quantity }) => ({ id, dishName, quantity })),
+      lines: lines.map(({ id, dishName, quantity, color }) => ({ id, dishName, quantity, color })),
     }
   })
 
@@ -296,10 +344,14 @@ async function loadOrders(
   }
 
   // One query for all the lines, not one per order: the kitchen screen
-  // refetches on every event, and an N+1 would show there quickly.
+  // refetches on every event, and an N+1 would show there quickly. The two
+  // joins ride along for free and bring back the colour of each line's
+  // category - LEFT, because a deleted dish leaves the line standing.
   const items = await db
-    .select()
+    .select({ item: orderItems, color: categories.color })
     .from(orderItems)
+    .leftJoin(dishes, eq(dishes.id, orderItems.dishId))
+    .leftJoin(categories, eq(categories.id, dishes.categoryId))
     .where(
       inArray(
         orderItems.orderId,
@@ -308,9 +360,14 @@ async function loadOrders(
     )
 
   const byOrder = new Map<string, OrderLineView[]>()
-  for (const item of items) {
+  for (const { item, color } of items) {
     const list = byOrder.get(item.orderId) ?? []
-    list.push({ id: item.id, dishName: item.dishName, quantity: item.quantity })
+    list.push({
+      id: item.id,
+      dishName: item.dishName,
+      quantity: item.quantity,
+      color: toColor(color),
+    })
     byOrder.set(item.orderId, list)
   }
 
@@ -319,7 +376,7 @@ async function loadOrders(
 
     return {
       id: row.id,
-      tableLabel: row.tableLabel,
+      number: row.number,
       note: row.note,
       status: isOrderStatus(row.status) ? row.status : ORDER_STATUS.Pending,
       createdAt: row.createdAt.getTime(),
@@ -328,4 +385,16 @@ async function loadOrders(
       lines,
     }
   })
+}
+
+/**
+ * A colour read back out of the database, or nothing.
+ *
+ * `color` is a plain text column and this is the join's left side: it is null
+ * for a line whose dish has been deleted, and it could hold a token this
+ * version of the application no longer knows. Both end up the same way - no
+ * dot on the line - rather than as a class name that does not exist.
+ */
+function toColor(value: string | null): CategoryColor | null {
+  return value !== null && isCategoryColor(value) ? value : null
 }

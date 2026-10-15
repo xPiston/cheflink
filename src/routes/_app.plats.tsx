@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { CategoryBadge, CategoryColorPicker } from '#/components/category-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
@@ -17,9 +18,24 @@ import {
 } from '#/components/ui/dialog'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { Textarea } from '#/components/ui/textarea'
 import { useAppEvents } from '#/hooks/use-app-events'
+import { DEFAULT_CATEGORY_COLOR, type CategoryColor } from '#/lib/categories'
 import { m } from '#/paraglide/messages'
+import {
+  createCategory,
+  deleteCategory,
+  listCategories,
+  updateCategory,
+  type Category,
+} from '#/server/functions/categories'
 import { createDish, deleteDish, listDishes, updateDish, type Dish } from '#/server/functions/dishes'
 
 export const Route = createFileRoute('/_app/plats')({
@@ -30,42 +46,70 @@ type FormState = {
   id: string | null
   name: string
   description: string
-  category: string
+  categoryId: string
   available: boolean
+}
+
+type CategoryFormState = {
+  id: string | null
+  name: string
+  color: CategoryColor
 }
 
 const EMPTY: FormState = {
   id: null,
   name: '',
   description: '',
-  category: '',
+  categoryId: '',
   available: true,
+}
+
+const EMPTY_CATEGORY: CategoryFormState = {
+  id: null,
+  name: '',
+  color: DEFAULT_CATEGORY_COLOR,
 }
 
 function DishesPage() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<FormState | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Dish | null>(null)
+  const [categoryForm, setCategoryForm] = useState<CategoryFormState | null>(null)
+  const [pendingCategoryDelete, setPendingCategoryDelete] = useState<Category | null>(null)
 
   const dishes = useQuery({ queryKey: ['dishes'], queryFn: () => listDishes() })
+  const categories = useQuery({ queryKey: ['categories'], queryFn: () => listCategories() })
+
+  /**
+   * Both lists, always together.
+   *
+   * A category carries the colour the dishes are drawn in, so a recolour on
+   * another tablet changes this screen without a single dish having moved.
+   * One event covers both (see src/server/functions/categories.ts) and one
+   * refresh has to follow it.
+   */
+  const invalidate = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['dishes'] }),
+      queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    ])
+  }
 
   useAppEvents({
     onEvent: (event) => {
       if (event.type === 'dishes.changed') {
-        void queryClient.invalidateQueries({ queryKey: ['dishes'] })
+        void invalidate()
       }
     },
-    onConnect: () => void queryClient.invalidateQueries({ queryKey: ['dishes'] }),
+    onConnect: () => void invalidate(),
   })
-
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['dishes'] })
 
   const save = useMutation({
     mutationFn: (state: FormState) => {
       const payload = {
         name: state.name.trim(),
         description: state.description.trim(),
-        category: state.category.trim(),
+        categoryId: state.categoryId,
         available: state.available,
       }
 
@@ -97,24 +141,104 @@ function DishesPage() {
     onError: () => toast.error(m.dishes_delete_failed()),
   })
 
+  const saveCategory = useMutation({
+    mutationFn: (state: CategoryFormState) => {
+      const payload = { name: state.name.trim(), color: state.color }
+
+      return state.id
+        ? updateCategory({ data: { ...payload, id: state.id } })
+        : createCategory({ data: payload })
+    },
+    onSuccess: async (category) => {
+      toast.success(m.categories_saved({ category: category.name }))
+      setCategoryForm(null)
+      await invalidate()
+    },
+    // Same reasoning as for a dish: "there is already a Desserts" is the
+    // whole point of the message, and a generic one would lose it.
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : m.categories_save_failed()),
+  })
+
+  const removeCategory = useMutation({
+    mutationFn: (category: Category) => deleteCategory({ data: { id: category.id } }),
+    onSuccess: async () => {
+      toast.success(m.categories_deleted())
+      setPendingCategoryDelete(null)
+      await invalidate()
+    },
+    // A category that still holds dishes is refused by the server, and that
+    // refusal is the message worth reading.
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : m.categories_delete_failed()),
+  })
+
   const rows = dishes.data ?? []
+  const sections = categories.data ?? []
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-2xl font-semibold">{m.nav_dishes()}</h1>
-        <Button onClick={() => setForm(EMPTY)}>
+        <Button variant="outline" onClick={() => setCategoryForm(EMPTY_CATEGORY)}>
+          <Plus className="size-4" aria-hidden />
+          {m.categories_new()}
+        </Button>
+        {/*
+          A dish has to belong to a category, so on an empty card the button
+          would open a dialog that cannot be saved. It says why instead.
+        */}
+        <Button disabled={sections.length === 0} onClick={() => setForm(EMPTY)}>
           <Plus className="size-4" aria-hidden />
           {m.dishes_new()}
         </Button>
       </div>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium text-muted-foreground">{m.categories_title()}</h2>
+
+        {categories.isSuccess && sections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{m.categories_empty()}</p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            {sections.map((category) => (
+              <div
+                key={category.id}
+                className="flex items-center gap-1 rounded-full border border-border/60 py-1 pr-1 pl-2"
+              >
+                <CategoryBadge name={category.name} color={category.color} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label={m.categories_edit_one({ category: category.name })}
+                  onClick={() =>
+                    setCategoryForm({ id: category.id, name: category.name, color: category.color })
+                  }
+                >
+                  <Pencil className="size-3.5" aria-hidden />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label={m.categories_delete_one({ category: category.name })}
+                  onClick={() => setPendingCategoryDelete(category)}
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {dishes.isLoading ? <p className="text-sm text-muted-foreground">{m.common_loading()}</p> : null}
 
       {dishes.isSuccess && rows.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center text-muted-foreground">
-            {m.dishes_empty()}
+            {sections.length === 0 ? m.dishes_need_category() : m.dishes_empty()}
           </CardContent>
         </Card>
       ) : null}
@@ -126,7 +250,7 @@ function DishesPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{dish.name}</span>
-                  <Badge variant="outline">{dish.category}</Badge>
+                  <CategoryBadge name={dish.category.name} color={dish.category.color} />
                   {dish.available ? null : <Badge variant="secondary">{m.dishes_unavailable()}</Badge>}
                 </div>
                 {dish.description ? (
@@ -144,7 +268,7 @@ function DishesPage() {
                       id: dish.id,
                       name: dish.name,
                       description: dish.description ?? '',
-                      category: dish.category,
+                      categoryId: dish.category.id,
                       available: dish.available,
                     })
                   }
@@ -202,13 +326,26 @@ function DishesPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="category">{m.dishes_category()}</Label>
-                <Input
-                  id="category"
-                  required
-                  placeholder={m.dishes_category_placeholder()}
-                  value={form.category}
-                  onChange={(event) => setForm({ ...form, category: event.target.value })}
-                />
+                {/*
+                  A list, not a text field. Typed by hand, "Desserts" and
+                  "desserts" were two sections of the same card - and there
+                  would be nothing to hang a colour on.
+                */}
+                <Select
+                  value={form.categoryId}
+                  onValueChange={(categoryId) => setForm({ ...form, categoryId })}
+                >
+                  <SelectTrigger id="category" className="w-full">
+                    <SelectValue placeholder={m.dishes_category_choose()} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sections.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <CategoryBadge name={category.name} color={category.color} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <label className="flex items-center gap-2 text-sm">
@@ -225,8 +362,62 @@ function DishesPage() {
                 <Button type="button" variant="ghost" onClick={() => setForm(null)}>
                   {m.common_cancel()}
                 </Button>
-                <Button type="submit" disabled={save.isPending}>
+                <Button type="submit" disabled={save.isPending || form.categoryId === ''}>
                   {save.isPending ? m.common_saving() : m.common_save()}
+                </Button>
+              </DialogFooter>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={categoryForm !== null}
+        onOpenChange={(open) => (open ? null : setCategoryForm(null))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {categoryForm?.id ? m.categories_edit() : m.categories_new()}
+            </DialogTitle>
+            <DialogDescription>{m.categories_form_hint()}</DialogDescription>
+          </DialogHeader>
+
+          {categoryForm ? (
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault()
+                saveCategory.mutate(categoryForm)
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="category-name">{m.categories_name()}</Label>
+                <Input
+                  id="category-name"
+                  required
+                  value={categoryForm.name}
+                  onChange={(event) =>
+                    setCategoryForm({ ...categoryForm, name: event.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{m.categories_color()}</Label>
+                <CategoryColorPicker
+                  value={categoryForm.color}
+                  disabled={saveCategory.isPending}
+                  onChange={(color) => setCategoryForm({ ...categoryForm, color })}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setCategoryForm(null)}>
+                  {m.common_cancel()}
+                </Button>
+                <Button type="submit" disabled={saveCategory.isPending}>
+                  {saveCategory.isPending ? m.common_saving() : m.common_save()}
                 </Button>
               </DialogFooter>
             </form>
@@ -252,6 +443,33 @@ function DishesPage() {
               variant="destructive"
               disabled={remove.isPending}
               onClick={() => pendingDelete && remove.mutate(pendingDelete)}
+            >
+              {m.common_delete()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={pendingCategoryDelete !== null}
+        onOpenChange={(open) => (open ? null : setPendingCategoryDelete(null))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {m.categories_delete_title({ category: pendingCategoryDelete?.name ?? '' })}
+            </DialogTitle>
+            <DialogDescription>{m.categories_delete_hint()}</DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingCategoryDelete(null)}>
+              {m.common_cancel()}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={removeCategory.isPending}
+              onClick={() => pendingCategoryDelete && removeCategory.mutate(pendingCategoryDelete)}
             >
               {m.common_delete()}
             </Button>

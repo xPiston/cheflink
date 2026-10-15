@@ -54,6 +54,60 @@ export function isOrderStatus(value: string): value is OrderStatus {
   )
 }
 
+/**
+ * The hour the counter turns over, and where that hour is read.
+ *
+ * An order is called out by its number - "quatorze !" - so the number has to
+ * be short, and the only way to keep it short is to start again every day.
+ * The question is when "every day" begins, and midnight is the wrong answer:
+ * a bar that closes at two in the morning is still in the same service at
+ * one, and a counter that reset at midnight would send the kitchen a second
+ * "#1" in the middle of the rush. Five in the morning is the hour nothing is
+ * being served.
+ *
+ * Paris rather than the server's clock, for the same reason the history uses
+ * a rolling window: the Worker runs wherever Cloudflare happened to put it,
+ * and UTC would turn the counter at two or three in the morning local time
+ * depending on the season - inside service, which is precisely what this
+ * avoids.
+ */
+export const SERVICE_TIMEZONE = 'Europe/Paris'
+export const SERVICE_DAY_TURNS_AT_HOUR = 5
+
+/**
+ * Which service a moment belongs to, as `YYYY-MM-DD`.
+ *
+ * A plain string rather than a timestamp, because it is used as a key: the
+ * database numbers orders within one of these, and two orders of the same
+ * service must agree on it exactly. Arithmetic on dates would make that
+ * depend on who did the subtracting.
+ */
+export function serviceDay(at: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SERVICE_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    // Without this, midnight in Paris formats as hour "24" and the night
+    // service would be filed under the following day.
+    hourCycle: 'h23',
+  }).formatToParts(at)
+
+  const part = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((candidate) => candidate.type === type)?.value ?? '0')
+
+  // Midnight UTC of the calendar day as read in Paris, then one day back if
+  // we are still in the small hours. Date.UTC is used as plain calendar
+  // arithmetic on a date with no time in it, so no daylight saving shift can
+  // reach it.
+  const calendarDay = Date.UTC(part('year'), part('month') - 1, part('day'))
+  const shifted =
+    part('hour') < SERVICE_DAY_TURNS_AT_HOUR ? calendarDay - 24 * 60 * 60 * 1000 : calendarDay
+
+  return new Date(shifted).toISOString().slice(0, 10)
+}
+
 export type OrderLineInput = {
   dishId: string
   quantity: number
