@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { getDb } from '#/db/client'
 import { categories, dishes } from '#/db/schema'
-import { DEFAULT_DISH_COLOR, DISH_COLORS, isDishColor, type DishColor } from '#/lib/colors'
+import { asDishColor, DEFAULT_DISH_COLOR, type DishColor } from '#/lib/colors'
 import { m } from '#/paraglide/messages'
 import { newId, requireUser } from '#/server/auth'
 import { publish } from '#/server/events'
@@ -44,11 +44,22 @@ const dishInput = z.object({
    */
   categoryId: z.string().uuid({ error: () => m.error_dish_category_required() }),
   /**
-   * An enum, so a colour the interface does not offer cannot reach the
-   * database. The palette is defined once in `src/lib/colors.ts` and this is
-   * the only place that guards the way in.
+   * Parsed rather than matched against a list, because there are now two kinds
+   * of valid colour - one of the sixteen house tokens, or a `#rrggbb` chosen
+   * in the picker - and `asDishColor` is the function that knows both. The
+   * same function reads the column back in `toDish` below, so what is written
+   * and what is read cannot drift apart, and whatever it refuses never reaches
+   * the database.
    */
-  color: z.enum(DISH_COLORS),
+  color: z.string().transform((value, ctx) => {
+    const color = asDishColor(value)
+    if (!color) {
+      ctx.addIssue({ code: 'custom', message: m.error_dish_color_invalid() })
+      return z.NEVER
+    }
+
+    return color
+  }),
   available: z.boolean(),
 })
 
@@ -184,10 +195,11 @@ function toDish(
     id: row.id,
     name: row.name,
     description: row.description,
-    // The column is plain text, so the palette is re-checked on the way out:
-    // a value written by an older version of the application, or by hand,
-    // must not reach a screen as a class name that does not exist.
-    color: isDishColor(row.color) ? row.color : DEFAULT_DISH_COLOR,
+    // The column is plain text, so it is re-read on the way out: a value
+    // written by an older version of the application, or by hand, must not
+    // reach a screen as a class name that does not exist or as a colour the
+    // browser ignores.
+    color: asDishColor(row.color) ?? DEFAULT_DISH_COLOR,
     /**
      * A dish with no category keeps a placeholder rather than a null, so that
      * every screen can write `dish.category.name` without a guard. The empty

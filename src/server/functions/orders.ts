@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { getDb } from '#/db/client'
 import { dishes, orderItems, orders } from '#/db/schema'
-import { isDishColor, type DishColor } from '#/lib/colors'
+import { asDishColor, type DishColor } from '#/lib/colors'
 import {
   DEFAULT_HISTORY_PERIOD,
   HISTORY_PERIODS,
@@ -394,5 +394,5 @@ async function loadOrders(
  * dot on the line - rather than as a class name that does not exist.
  */
 function toColor(value: string | null): DishColor | null {
-  return value !== null && isDishColor(value) ? value : null
+  return value === null ? null : asDishColor(value)
 }

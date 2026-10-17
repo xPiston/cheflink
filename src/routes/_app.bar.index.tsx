@@ -4,7 +4,7 @@ import { Minus, Plus, Send, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import { dishBarClass } from '#/components/dish-color'
+import { dishBar } from '#/components/dish-color'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -144,38 +144,48 @@ function TakeOrderPage() {
               {category.name}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              {items.map((dish) => (
-                <Card key={dish.id} className={cn('gap-3 py-4', dishBarClass(dish.color))}>
-                  <CardContent className="flex items-start gap-3 px-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{dish.name}</p>
-                      {dish.description ? (
-                        <p className="text-sm text-muted-foreground">{dish.description}</p>
-                      ) : null}
-                    </div>
+              {items.map((dish) => {
+                // The bar is a pair of classes for a house colour and an
+                // inline style for a custom one, so it arrives as both.
+                const bar = dishBar(dish.color)
 
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label={m.order_remove_one({ dish: dish.name })}
-                        disabled={!draft[dish.id]}
-                        onClick={() => add(dish.id, -1)}
-                      >
-                        <Minus className="size-4" aria-hidden />
-                      </Button>
-                      <span className="w-6 text-center tabular-nums">{draft[dish.id] ?? 0}</span>
-                      <Button
-                        size="icon"
-                        aria-label={m.order_add_one({ dish: dish.name })}
-                        onClick={() => add(dish.id, 1)}
-                      >
-                        <Plus className="size-4" aria-hidden />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                return (
+                  <Card
+                    key={dish.id}
+                    className={cn('gap-3 py-4', bar.className)}
+                    style={bar.style}
+                  >
+                    <CardContent className="flex items-start gap-3 px-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{dish.name}</p>
+                        {dish.description ? (
+                          <p className="text-sm text-muted-foreground">{dish.description}</p>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label={m.order_remove_one({ dish: dish.name })}
+                          disabled={!draft[dish.id]}
+                          onClick={() => add(dish.id, -1)}
+                        >
+                          <Minus className="size-4" aria-hidden />
+                        </Button>
+                        <span className="w-6 text-center tabular-nums">{draft[dish.id] ?? 0}</span>
+                        <Button
+                          size="icon"
+                          aria-label={m.order_add_one({ dish: dish.name })}
+                          onClick={() => add(dish.id, 1)}
+                        >
+                          <Plus className="size-4" aria-hidden />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         ))}

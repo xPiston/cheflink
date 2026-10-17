@@ -12,7 +12,7 @@ On Cloudflare, within the free plan.
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 [![D1](https://img.shields.io/badge/D1-SQLite-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Tailwind%204-000000)](https://ui.shadcn.com)
-[![Tests](https://img.shields.io/badge/tests-37%20passing-22C55E)](#-tests)
+[![Tests](https://img.shields.io/badge/tests-53%20passing-22C55E)](#-tests)
 [![Deploy](https://img.shields.io/badge/deploy-on%20push%20to%20main-22C55E?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -45,9 +45,10 @@ mode, and either can switch with one click.
 - 🔢 **Orders are numbered, not seated** — the counter sends, the kitchen
   calls out "#14". The counter restarts every service, which turns at five in
   the morning rather than at midnight
-- 🎨 **A colour per dish** — chosen on the dishes page, shown down the side of
-  the dish on the counter screen and as a dot on every line of the kitchen
-  card, so two dishes of the same section are told apart on sight
+- 🎨 **A colour per dish** — chosen on the dishes page from sixteen house
+  colours or picked freely with the browser's own colour picker, shown down
+  the side of the dish on the counter screen and as a dot on every line of the
+  kitchen card, so two dishes of the same section are told apart on sight
 - 🍔 **Menu editable mid-service** — create, edit, delete a dish or a
   category, or mark a dish unavailable without removing it
 - 📋 **Order history as a table** — a 24 h / 7 day / 30 day window, filterable
@@ -65,8 +66,8 @@ mode, and either can switch with one click.
   device and resolved **server-side**, so the first HTML is already in the
   right language
 - ☁️ **Cloudflare end to end** — Workers, D1, a Durable Object, free plan
-- ✅ **37 tests** on the business rules, the colour palette and the message
-  catalogues, with no database and no browser
+- ✅ **53 tests** on the business rules, the colour palette, what it renders
+  as and the message catalogues, with no database and no browser
 
 | | |
 | :--: | :--: |
@@ -312,9 +313,18 @@ the start of service beats a chime you discover at 8pm has never worked.
   made "Desserts" and "desserts" two sections of the same card, so a category
   became a row and the form a list. The colour sits one level down, on the
   dish itself: a section tells you where to look, a colour tells the burger
-  from the cheeseburger. It is stored as `ambre`, not `#f59e0b` — a hex is a
-  fact about one theme, and this application has two, each picking its own
-  shade for the token.
+  from the cheeseburger. The sixteen house colours are stored as `ambre`, not
+  as `#f59e0b` — a hex is a fact about one theme, and this application has
+  two, each picking its own shade for the token.
+- **The picker is the way out of the palette, not the way in.** A house that
+  wants its own colour gets `<input type="color">` and a `#rrggbb` in the
+  column, which is one shade for both themes — exactly the compromise the
+  tokens avoid. So the palette comes first, sixteen swatches wide, and the
+  seventeenth opens the browser's own picker: already familiar under a thumb,
+  already translated, already reachable by keyboard. A custom colour is drawn
+  as an inline style rather than a class, because Tailwind only generates the
+  classes it can read in the source, and it carries a thin ring so a near-white
+  chosen by hand does not vanish on a white card.
 - **The column the colour replaced is still there, on purpose.** Dropping
   `categories.color` in the same migration that adds `dishes.color` would
   break the Worker still serving traffic, which reads it, for as long as the
